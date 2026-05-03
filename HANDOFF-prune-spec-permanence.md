@@ -1,7 +1,8 @@
 # HANDOFF: prune spec/plan permanence from superpowers skills
 
 **Date started:** 2026-04-26
-**Status:** repo cloned, audit done, no edits yet
+**Last updated:** 2026-05-03
+**Status:** branch scaffolding complete; skill amendments not yet drafted
 
 ## Why we forked
 
@@ -19,17 +20,29 @@ reviewers treat the spec as authoritative when code and spec disagree.
 
 This fork exists to bend those skills toward the schoen workflow.
 
-## Repo state
+## Repo state (as of 2026-05-03)
 
-- Cloned from `git@github.com:obra/superpowers.git` to `~/superpowers`
-- On `main` at commit `6efe32c` ("Use committed Codex plugin files in
-  sync script")
-- Remotes:
+- Worktree at `/home/schoen/superpowers`. Currently checked out on
+  `prune-spec-permanence` (the feature branch this doc lives on).
+- Remotes (all three configured):
   - `origin` → `git@github.com:obra/superpowers.git`
   - `mtschoen` → `git@github.com:mtschoen/superpowers.git` (schoen's
-    pre-existing fork; added 2026-04-26 in this session)
-- No local branch created yet
-- No gitea remote configured yet
+    github fork)
+  - `gitea` → `gitea@llamabox:schoen/superpowers.git` (was a pull
+    mirror of obra; converted to regular repo 2026-05-03)
+- Branches built and pushed to both `mtschoen` and `gitea`:
+  - `schoen/main` — `origin/main` + merges of the two fix branches
+    (one merge commit per fix)
+  - `dev-probes` — probe markers (`5.0.7+probe1` version bump,
+    `PLUGIN_UPDATE_WORKFLOW_MARKER_2026_04_26` injection in
+    brainstorming description) + `dev/` directory containing the
+    fork's bootstrap scripts (`superpowers-dev-check.py`,
+    `superpowers-dev-fixit.py`)
+  - `prune-spec-permanence` — single commit holding this handoff doc
+- All three feature branches branched off `origin/main`. The plan is
+  to merge all four (the two fix branches + dev-probes +
+  prune-spec-permanence) into `schoen/main` once the spec-permanence
+  amendments are done.
 
 ## schoen's existing fork (mtschoen/superpowers) — INVENTORY FINAL 2026-05-03
 
@@ -103,6 +116,12 @@ transcription. The merged version should incorporate the full
 failure-sign list from CLAUDE.md, not just the untracked-files
 subcase.
 
+**STATUS 2026-05-03:** c384d09 has been merged into `schoen/main`
+verbatim — the broader CLAUDE.md content has NOT been folded in yet.
+This is queued as part of the spec-permanence amendment work
+(specifically the `subagent-driven-development` amendment), since the
+two will likely overlap in the same SKILL.md section.
+
 ### Bridge to the prune-spec-permanence work
 
 `c384d09` already takes a half-step toward "specs/plans as ephemeral
@@ -113,20 +132,28 @@ travels as conversation context, not as a file the subagent must
 locate. Worth citing as prior art within the schoen line when
 amending `subagent-driven-development` and `writing-plans`.
 
-## schoen's desired branch model (from this session)
+## Branch model (built 2026-05-03)
 
-1. Establish a primary fork branch — proposed name `schoen/main` —
-   that consolidates `origin/main` plus the two existing fix
-   branches above. This becomes the ongoing "where my fork's
-   philosophy lives" branch.
-2. The spec/plan-permanence amendments (see "Audit" below) happen on
-   a **feature branch** cut from `schoen/main` and **PR'd back to
-   `schoen/main`** on the github fork. This formalizes the
-   philosophical divergence in PR history rather than burying it in
-   straight commits to main.
-3. Gitea mirror is still desired (`schoen/superpowers` on
-   `gitea.llamabox.internal`) but is secondary to the github fork now
-   that we know it exists.
+`schoen/main` is the primary fork branch — `origin/main` plus
+`--no-ff` merges of each contributing branch. All feature branches
+(the two fix branches, `dev-probes`, `prune-spec-permanence`) are cut
+from `origin/main` and merge into `schoen/main` once their work is
+done. This is a fan-in pattern: every feature branches off a known
+upstream commit and converges via a visible merge commit, so the
+philosophical divergence is recorded in PR history rather than buried
+in linear commits to main.
+
+`dev-probes` is intended as a permanent feature of `schoen/main` —
+the probe markers and `dev/` bootstrap scripts ship with the fork so
+the dev install can be set up on any machine where the fork is
+cloned.
+
+The github fork (`mtschoen/superpowers`) is the canonical home for
+PRs into `schoen/main`. The gitea repo (`schoen/superpowers` on
+`gitea.llamabox.internal`) carries the same branches as a
+local-network mirror; default `git pull`/`git push` for these
+branches goes to gitea (low-latency), explicit `git push mtschoen
+<branch>` to surface work on github.
 
 ## License + legal (verified 2026-04-26)
 
@@ -166,32 +193,27 @@ anything is committed. No implementation skills should be invoked
 during this work — this is editing skill markdown, not building
 software.
 
-## Pending operational decisions
+## Operational decisions (resolved 2026-05-03)
 
-1. **Build `schoen/main`.** Cut a new branch off `origin/main` (or
-   `mtschoen/main`, equivalent), merge or cherry-pick the two real
-   fix commits (`3367249` from `fix/finishing-branch-cleanup-order`
-   and `c384d09` from `fix/subagent-driven-dev-worktree-isolation`),
-   push to `mtschoen/schoen/main`. Confirm the branch name
-   (`schoen/main` is the schoen-stated default; alternatives like
-   `mtschoen-main` or `personal-main` if slashes look weird) before
-   pushing.
-2. **Feature branch for the amendments.** Off `schoen/main`, name
-   something like `feat/specs-plans-ephemeral` or
-   `feat/prune-spec-permanence`. PR back to `schoen/main` on the
-   github fork to record the divergence.
-3. **Gitea mirror.** Still desired. Create `schoen/superpowers` on
-   `gitea.llamabox.internal` and push `schoen/main`. Secondary to
-   the github fork; not blocking.
-4. **Runtime override.** How does the modified skill actually replace
-   the upstream one inside Claude Code? Three candidates, untried:
-   - User-level skill at `~/.claude/skills/<name>/` overriding the
-     plugin's
-   - Register the fork as a local plugin
-   - Direct override of `~/.claude/plugins/cache/...` (gets blown
-     away on plugin update — bad)
-   This is a separate investigation from the content edits and should
-   not block them.
+1. ~~**Build `schoen/main`.**~~ Done. Two `--no-ff` merge commits on
+   top of `origin/main` (one per fix branch). Pushed to mtschoen and
+   gitea.
+2. ~~**Feature branch for the amendments.**~~ Done. Branch is
+   `prune-spec-permanence` (cut from `origin/main`, not
+   `schoen/main`, so it can have its own history that merges into
+   `schoen/main` separately from the dev-probes and fix branches).
+3. ~~**Gitea repo.**~~ Done. `schoen/superpowers` on
+   `gitea.llamabox.internal` was already a pull-mirror of obra; now
+   converted to a regular repo and carries all four feature branches.
+4. ~~**Runtime override.**~~ Resolved before this session started.
+   The fork loads as `superpowers@superpowers-dev` via manual
+   registration in `~/.claude/plugins/installed_plugins.json`, with
+   `superpowers@claude-plugins-official` disabled in
+   `~/.claude/settings.json`. Maintained by the `dev/` bootstrap
+   scripts now living on the `dev-probes` branch. The three
+   originally-considered candidates (user-level skill override, local
+   plugin registration, cache override) were all ruled out — see the
+   `project_local_dev_setup.md` memory file for full rationale.
 
 ## Downstream consequence
 
@@ -206,16 +228,23 @@ language. Deferred — see `~/local-ci/HANDOFF-windows-runner.md`.
 
 ## Resume-from-here checklist
 
-1. ~~Inventory check.~~ Done 2026-05-03. See "INVENTORY FINAL"
-   section above.
-2. Confirm `schoen/main` as the primary fork branch name.
-3. Build `schoen/main` (consolidate `origin/main` + the two fix
-   commits) and push to the github fork. When re-landing `c384d09`,
-   merge in the broader CLAUDE.md "Parallel Worktree Agents"
-   failure-sign list — see caveat above.
-4. Create `schoen/superpowers` on gitea, mirror push.
-5. Cut feature branch off `schoen/main` for the amendments.
-6. Draft specific wording for each of the 5 amendments. Get schoen's
-   approval section by section. Apply, commit.
-7. Push feature branch and open PR back to `schoen/main` on github.
-8. Separately: solve runtime override (task #12 in parent session).
+All branch scaffolding is done. What remains:
+
+1. **Draft the 5 skill amendments.** See "Audit" table above. Each
+   amendment needs section-by-section approval from schoen before
+   committing — wording is load-bearing for skills, and the project's
+   CLAUDE.md explicitly warns that "compliance" rewrites of skill
+   content will be rejected upstream. Work happens on the
+   `prune-spec-permanence` branch (currently checked out).
+2. **Fold the broader CLAUDE.md "Parallel Worktree Agents" content
+   into the `subagent-driven-development` amendment** — see the
+   c384d09 caveat above. The current SKILL.md only addresses one
+   subcase; the broader failure-sign list lives in
+   `~/.claude/CLAUDE.md` and should be incorporated when amending
+   that skill.
+3. **Push branch and open PR** back to `schoen/main` on github once
+   amendments are approved and committed. Branch is already pushed
+   to both remotes; PR creation is a github-side action.
+4. **Separately: update `local-ci/CLAUDE.md`** per the "Downstream
+   consequence" section above — replace the frozen-spec rule with
+   living-doc language. Tracked in `~/local-ci/HANDOFF-windows-runner.md`.
