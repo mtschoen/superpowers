@@ -31,9 +31,9 @@ echo ""
 # Test 2: Verify skill describes correct workflow order
 echo "Test 2: Workflow ordering..."
 
-output=$(run_claude "In the subagent-driven-development skill, what comes first: spec compliance review or code quality review? Be specific about the order." 30)
+output=$(run_claude "In the subagent-driven-development skill, what comes first: plan compliance review or code quality review? Be specific about the order." 30)
 
-if assert_order "$output" "spec.*compliance" "code.*quality" "Spec compliance before code quality"; then
+if assert_order "$output" "plan.*compliance" "code.*quality" "Plan compliance before code quality"; then
     : # pass
 else
     exit 1
@@ -79,10 +79,10 @@ fi
 
 echo ""
 
-# Test 5: Verify spec compliance reviewer is skeptical
-echo "Test 5: Spec compliance reviewer mindset..."
+# Test 5: Verify plan compliance reviewer is skeptical
+echo "Test 5: Plan compliance reviewer mindset..."
 
-output=$(run_claude "What is the spec compliance reviewer's attitude toward the implementer's report in subagent-driven-development?" 30)
+output=$(run_claude "What is the plan compliance reviewer's attitude toward the implementer's report in subagent-driven-development?" 30)
 
 if assert_contains "$output" "not trust\|don't trust\|skeptical\|verify.*independently\|suspiciously" "Reviewer is skeptical"; then
     : # pass
