@@ -113,6 +113,28 @@ digraph brainstorming {
 - Use elements-of-style:writing-clearly-and-concisely skill if available
 - Commit the design document to git
 
+**Spec lifecycle:**
+
+The spec file is a working draft, not a durable design doc. Its job
+is to anchor the brainstorm-to-plan handoff so you and your human
+partner can review the design before plan-writing starts.
+
+When `writing-plans` runs, it will:
+- Distill this spec's intent into the plan's `Goal:` / `Architecture:`
+  / `Tech Stack:` header
+- Delete this spec file from the tree
+
+The spec exists for the duration of brainstorming + plan-writing.
+After that, the plan is the only artifact, and the plan itself is
+destined to be deleted when work completes — at branch-finish time,
+any durable insight is folded into proper documentation (README,
+ARCHITECTURE.md, inline doc comments) and the plan goes away. **The
+lasting artifacts are real documentation and code. Specs and plans
+are scaffolding.**
+
+If the design needs revision later (during plan-writing or
+execution), edit the plan — the spec is gone by then.
+
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
 
@@ -126,7 +148,7 @@ Fix any issues inline. No need to re-review — just fix and move on.
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan. (Reminder: it's a working draft — it'll be distilled into the plan header and deleted at the next handoff.)"
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 

@@ -9,6 +9,8 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
 
+The plan is **scaffolding** — thorough enough to guide implementation, transient enough to be deleted when the work is done. See "Plan Lifecycle" below.
+
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
@@ -18,9 +20,53 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 **Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
 
+## Plan Lifecycle
+
+A plan is scaffolding for implementation, not durable documentation.
+Three moments matter:
+
+**Birth:** This skill absorbs the brainstorming spec — the spec's
+intent is distilled into the plan's header (`Goal:` / `Architecture:`
+/ `Tech Stack:`) — and the spec file is deleted. From this point
+forward, the plan is the only artifact.
+
+**During execution:** Each commit that completes tasks flips those
+tasks' checkboxes from `- [ ]` to `- [x]`. The *next* commit
+(typically the start of the next phase) opens by deleting the prior
+phase's now-completed tasks plus any preamble that only served them.
+Pruning lags the work by one commit so each commit's diff narrates
+what it accomplished.
+
+**Death:** At branch-finish time, the plan is deleted. Before
+deletion, any durable insight (new abstractions, novel testing
+patterns, tricky tradeoffs, architectural decisions) is folded into
+proper documentation — README, ARCHITECTURE.md, inline doc comments,
+type docs. **The lasting artifacts are real documentation and code.
+Specs and plans are scaffolding.**
+
+Once the plan is deleted, its history is in git, not in the tree.
+`git log -- <plan-file>` is the audit trail. Don't keep the plan
+around 'just in case' — real documentation handles that role.
+
+**Once this skill starts, the plan is authoritative.** If self-review
+reveals a gap or an error, fix the plan (or the header). Don't update
+the spec — it's dying.
+
 ## Scope Check
 
 If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+
+## Step 1: Consume the Spec
+
+Before drafting tasks:
+
+1. Read the spec file (`docs/superpowers/specs/<path>` from
+   brainstorming).
+2. Distill its intent into the plan's header (`Goal:` /
+   `Architecture:` / `Tech Stack:`) — see "Plan Document Header"
+   below.
+3. Leave the spec file in place for now. Self-review still reads it.
+   Deletion happens after self-review (see "Spec Deletion" below).
 
 ## File Structure
 
@@ -44,6 +90,10 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ## Plan Document Header
 
+The header is the distilled spec — the part of the brainstorming
+intent that survives into execution. Once the spec file is deleted,
+this header carries the design rationale forward.
+
 **Every plan MUST start with this header:**
 
 ```markdown
@@ -62,7 +112,19 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ## Task Structure
 
+**Optional phase grouping.** When tasks cluster into milestones,
+group them under `## Phase N: <name>` headers (see example below).
+Phases are the pruning unit during execution — when a phase's tasks
+all complete, the *next* commit deletes the whole phase from the
+plan. Skip phase headers for small plans where everything is one
+phase; in that case no mid-execution pruning happens, and the plan
+gets deleted whole at branch-finish.
+
 ````markdown
+## Phase 1: <phase name>     <!-- optional; only when phase grouping helps -->
+
+[Optional preamble for the phase]
+
 ### Task N: [Component Name]
 
 **Files:**
@@ -121,7 +183,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 
 ## Self-Review
 
-After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch.
+After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch. **Run this BEFORE deleting the spec file (next step).**
 
 **1. Spec coverage:** Skim each section/requirement in the spec. Can you point to a task that implements it? List any gaps.
 
@@ -130,6 +192,20 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 **3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
+
+## Spec Deletion
+
+After self-review passes, delete the spec file:
+
+```bash
+git rm docs/superpowers/specs/<spec-file>.md
+git add docs/superpowers/plans/<plan-file>.md
+git commit -m "plan: <feature> (consume spec)"
+```
+
+Commit the spec removal alongside the new plan. The spec's content
+now lives in the plan's header. The git history records that the
+spec ever existed.
 
 ## Execution Handoff
 

@@ -8,13 +8,19 @@ Task tool (general-purpose):
   prompt: |
     You are implementing Task N: [task name]
 
+    ## Plan Header
+
+    [FULL TEXT of the plan's Goal / Architecture / Tech Stack header —
+    the design rationale that carried over from brainstorming]
+
     ## Task Description
 
     [FULL TEXT of task from plan - paste it here, don't make subagent read file]
 
     ## Context
 
-    [Scene-setting: where this fits, dependencies, architectural context]
+    [Scene-setting specific to this task: dependencies on prior tasks,
+    any task-local context not in the header]
 
     ## Before You Begin
 
@@ -76,7 +82,7 @@ Task tool (general-purpose):
     Review your work with fresh eyes. Ask yourself:
 
     **Completeness:**
-    - Did I fully implement everything in the spec?
+    - Did I fully implement everything in the task?
     - Did I miss any requirements?
     - Are there edge cases I didn't handle?
 
