@@ -46,11 +46,15 @@ When using `isolation: "worktree"` for subagents, run this check **before every 
    - If they aren't, commit them (even as a WIP commit) before dispatching.
    - **Or** (preferred): paste the full task text inline in the prompt rather than referencing a file path. This sidesteps the issue entirely and is already recommended by the implementer prompt template.
 
-2. **Verify isolation after dispatch.** When the subagent returns, check the tool result for a `worktreePath` and `worktreeBranch`. If these are missing but the agent reports making commits, assume isolation failed — the agent likely operated on the parent working tree. Signs of broken isolation:
+2. **Verify isolation after dispatch.** When the subagent returns, check the tool result for a `worktreePath` and `worktreeBranch`. If these are missing but the agent reports making commits, assume isolation failed — the agent likely operated on the parent working tree, and when multiple agents are dispatched in parallel, may have cross-contaminated with sibling agents. Signs of broken isolation:
    - Agent reports `Branch: master` (or whatever the parent branch is) instead of a `worktree-agent-*` branch.
    - Agent's Bash commands use `cd /path/to/parent/repo` instead of the worktree path.
    - The worktree directory doesn't exist on disk after the agent completes.
    - Uncommitted changes appear in the parent working tree matching the agent's reported work.
+   - Merges fail with `not something we can merge` — the `worktree-agent-*` branch the agent claimed to commit on never existed because isolation failed.
+   - One agent's commit includes files that were only staged by another sibling agent (cross-contamination via the shared parent tree).
+
+   If you see any of these signs, stop and investigate before dispatching more parallel work.
 
 3. **Recovery if isolation fails.** If an agent operated on the parent tree:
    - Check `git status` in the parent for the agent's changes.
