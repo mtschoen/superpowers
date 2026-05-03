@@ -37,6 +37,27 @@ digraph when_to_use {
 - Two-stage review after each task: spec compliance first, then code quality
 - Faster iteration (no human-in-loop between tasks)
 
+## Pre-Dispatch Checklist (Worktree Isolation)
+
+When using `isolation: "worktree"` for subagents, run this check **before every dispatch batch**:
+
+1. **Commit referenced files.** Worktrees check out from a git commit — untracked or uncommitted files in the parent working tree are **invisible** to the worktree. If the plan, spec, or any file the subagent needs is not committed, the subagent will either fail to find it or silently fall back to reading from the parent path, breaking isolation entirely.
+   - Run `git status` and verify that any file paths mentioned in your prompt are tracked and committed.
+   - If they aren't, commit them (even as a WIP commit) before dispatching.
+   - **Or** (preferred): paste the full task text inline in the prompt rather than referencing a file path. This sidesteps the issue entirely and is already recommended by the implementer prompt template.
+
+2. **Verify isolation after dispatch.** When the subagent returns, check the tool result for a `worktreePath` and `worktreeBranch`. If these are missing but the agent reports making commits, assume isolation failed — the agent likely operated on the parent working tree. Signs of broken isolation:
+   - Agent reports `Branch: master` (or whatever the parent branch is) instead of a `worktree-agent-*` branch.
+   - Agent's Bash commands use `cd /path/to/parent/repo` instead of the worktree path.
+   - The worktree directory doesn't exist on disk after the agent completes.
+   - Uncommitted changes appear in the parent working tree matching the agent's reported work.
+
+3. **Recovery if isolation fails.** If an agent operated on the parent tree:
+   - Check `git status` in the parent for the agent's changes.
+   - Verify tests pass on those changes.
+   - Commit them manually with the planned commit message.
+   - Do **not** re-dispatch — the work is done, just in the wrong place.
+
 ## The Process
 
 ```dot
@@ -238,7 +259,8 @@ Done!
 - Skip reviews (spec compliance OR code quality)
 - Proceed with unfixed issues
 - Dispatch multiple implementation subagents in parallel (conflicts)
-- Make subagent read plan file (provide full text instead)
+- Make subagent read plan file (provide full text instead — also prevents worktree isolation failures when the file isn't committed)
+- Dispatch worktree-isolated subagents when the plan/spec files are uncommitted (worktrees can't see untracked parent files)
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)
 - Accept "close enough" on spec compliance (spec reviewer found issues = not done)
