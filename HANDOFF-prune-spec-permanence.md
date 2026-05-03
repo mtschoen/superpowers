@@ -118,9 +118,15 @@ subcase.
 
 **STATUS 2026-05-03:** c384d09 has been merged into `schoen/main`
 verbatim — the broader CLAUDE.md content has NOT been folded in yet.
-This is queued as part of the spec-permanence amendment work
-(specifically the `subagent-driven-development` amendment), since the
-two will likely overlap in the same SKILL.md section.
+
+**Scope note:** this fold-in is *not* part of the spec/plan
+permanence work. It's a continuation of c384d09's worktree-isolation
+safety concern, conceptually unrelated to the spec/plan ephemerality
+reframe. It deserves its own feature branch (proposed name:
+`extend-sdd-worktree-isolation`, cut from `origin/main`, merged into
+`schoen/main` independently). Both branches will touch
+`skills/subagent-driven-development/SKILL.md` but in different
+sections, so there's no merge conflict risk.
 
 #### Source text (preserved here because it lives on a different machine)
 
@@ -258,23 +264,39 @@ language. Deferred — see `~/local-ci/HANDOFF-windows-runner.md`.
 
 ## Resume-from-here checklist
 
-All branch scaffolding is done. What remains:
+All branch scaffolding for the spec/plan-permanence work is done.
+What remains, separated by concern:
 
-1. **Draft the 5 skill amendments.** See "Audit" table above. Each
-   amendment needs section-by-section approval from schoen before
-   committing — wording is load-bearing for skills, and the project's
-   CLAUDE.md explicitly warns that "compliance" rewrites of skill
-   content will be rejected upstream. Work happens on the
-   `prune-spec-permanence` branch (currently checked out).
-2. **Fold the broader CLAUDE.md "Parallel Worktree Agents" content
-   into the `subagent-driven-development` amendment** — see the
-   c384d09 caveat above. The current SKILL.md only addresses one
-   subcase; the broader failure-sign list lives in
-   `~/.claude/CLAUDE.md` and should be incorporated when amending
-   that skill.
-3. **Push branch and open PR** back to `schoen/main` on github once
+### On `prune-spec-permanence` (this branch)
+
+1. **Draft the 5 spec/plan-permanence amendments.** See "Audit"
+   table above. Each amendment needs section-by-section approval
+   from schoen before committing — wording is load-bearing for
+   skills, and the project's CLAUDE.md explicitly warns that
+   "compliance" rewrites of skill content will be rejected upstream.
+   For SDD specifically, scope is the spec-authority change ("spec
+   is not authoritative over working code"); the worktree-isolation
+   work is a separate branch (see below).
+2. **Push branch and open PR** back to `schoen/main` on github once
    amendments are approved and committed. Branch is already pushed
    to both remotes; PR creation is a github-side action.
-4. **Separately: update `local-ci/CLAUDE.md`** per the "Downstream
-   consequence" section above — replace the frozen-spec rule with
-   living-doc language. Tracked in `~/local-ci/HANDOFF-windows-runner.md`.
+
+### On a new `extend-sdd-worktree-isolation` branch
+
+3. **Cut new branch off `origin/main`.** Conceptually a continuation
+   of c384d09 (worktree isolation safety), independent of
+   spec/plan-permanence work.
+4. **Fold the captured CLAUDE.md "Parallel Worktree Agents" content
+   into SDD's existing "Pre-Dispatch Checklist (Worktree Isolation)"
+   section.** Source text is preserved in this handoff (see the
+   c384d09 caveat section above). Treat the c384d09 checklist as the
+   pre-dispatch step; add the CLAUDE.md verification + failure-signs
+   as a post-dispatch step.
+5. **Push branch and open PR** back to `schoen/main` on github.
+
+### Downstream
+
+6. **Update `local-ci/CLAUDE.md`** per the "Downstream consequence"
+   section above — replace the frozen-spec rule with living-doc
+   language. Only after the spec/plan-permanence PR has merged into
+   `schoen/main`. Tracked in `~/local-ci/HANDOFF-windows-runner.md`.
