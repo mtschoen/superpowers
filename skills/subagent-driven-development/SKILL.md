@@ -62,6 +62,48 @@ When using `isolation: "worktree"` for subagents, run this check **before every 
    - Commit them manually with the planned commit message.
    - Do **not** re-dispatch — the work is done, just in the wrong place.
 
+4. **Permission allowlist must live in global settings.** When subagents are dispatched with `isolation: "worktree"`, their cwd becomes `<repo>/.claude/worktrees/agent-xxx/`. Claude Code's permission resolution searches upward for `.claude/settings.local.json` but stops at the worktree boundary (the `.git` file there makes the worktree its own root) — it does **not** find the outer project's `.claude/settings.local.json`. Effect: project-local grants like `Bash(*)` don't apply to worktree subagents, and they stall on permission prompts that the user can't see (especially under `run_in_background: true`).
+
+   Put broad grants in `~/.claude/settings.json` (global user settings) so they apply everywhere including worktrees:
+
+   ```json
+   { "permissions": { "allow": ["Bash(*)"] } }
+   ```
+
+## Post-Dispatch: Merging Parallel Branches
+
+When a wave of parallel implementers all return cleanly, each on its own `worktree-agent-*` branch with disjoint files:
+
+**Cherry-pick for linear history.** Cherry-pick each agent's commit onto main rather than merging each branch with `--no-ff`:
+
+```bash
+git cherry-pick <sha1> <sha2> <sha3> ...
+```
+
+This produces a clean linear history. Conflict-free as long as each worktree touched different files. `git merge --no-ff` per-branch generates a merge commit per branch — noisy and unnecessary when the branches are each `main + 1 commit`.
+
+**Cleanup after merge.** Remove the worktrees and delete the branches, or `.claude/worktrees/` accumulates inherited cruft and the branch list gets messy:
+
+```bash
+for w in agent-X agent-Y agent-Z; do
+  git worktree remove --force .claude/worktrees/$w
+  git branch -D worktree-agent-$w
+done
+```
+
+**CRITICAL pitfall — never `git add -A` while worktrees exist.** If `.claude/worktrees/` contains active worktrees, `git add -A` from the parent working tree picks them up as **embedded git repositories** (gitlinks/submodules) and silently adds them to the index. Committing then pollutes main with submodule references that don't resolve.
+
+If it happens:
+```bash
+git reset --soft HEAD~1                  # undo the bad commit, keep staging
+git restore --staged .claude/worktrees/  # unstage the gitlinks
+git commit -m "..."                      # re-commit the legitimate changes
+```
+
+Prevent it by staging files explicitly (`git add file1 file2 ...`) while worktrees are alive. Once worktrees are removed, `git add -A` is safe again.
+
+**Reviews can be parallel too.** Spec compliance and code quality reviewers are read-only — after all implementers return, dispatch all spec reviewers in parallel, wait, then dispatch all quality reviewers in parallel. Two waves of N parallel reviewers, no contention.
+
 ## The Process
 
 ```dot
