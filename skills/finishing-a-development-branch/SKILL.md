@@ -65,6 +65,52 @@ Which option?
 
 ### Step 4: Execute Choice
 
+**For Options 1 and 2: do Plan Disposal first (see below).** For
+Option 3, no disposal — work is paused. For Option 4, the whole
+branch is being discarded; the plan goes with it.
+
+#### Plan Disposal (Options 1 and 2)
+
+Before merging or pushing, dispose of the plan file.
+
+**1. Extract durable insight, if any.** Most plans are nearly empty
+by this point — phases were pruned during execution and only the
+header plus the final phase's struck-through tasks remain. Review
+the branch's work — the code diff (`git diff <base>..HEAD`), the
+commit messages, and whatever's left in the plan — and ask: does
+this work expose anything that should outlast the scaffolding?
+
+Examples of insight worth folding into proper docs:
+- A new abstraction or pattern → README / ARCHITECTURE.md
+- A non-obvious testing approach → test-suite README or test file
+  comments
+- A subtle invariant or constraint → inline doc comment near the
+  code that enforces it
+- An architectural decision with non-obvious tradeoffs → an
+  ADR-style note (if the project uses them) or ARCHITECTURE.md
+
+Most work yields nothing in this category. That's normal. Don't
+fabricate insight to justify the step.
+
+**2. Delete the plan file.**
+
+If insight was folded in:
+
+```bash
+git rm docs/superpowers/plans/<plan-file>.md
+git add <docs touched in step 1>
+git commit -m "docs: <feature> (dispose plan, fold insight into <doc>)"
+```
+
+If no docs were touched:
+
+```bash
+git rm docs/superpowers/plans/<plan-file>.md
+git commit -m "chore: remove implementation plan for <feature>"
+```
+
+Then proceed to your chosen option below.
+
 #### Option 1: Merge Locally
 
 ```bash
