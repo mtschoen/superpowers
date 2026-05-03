@@ -122,6 +122,36 @@ This is queued as part of the spec-permanence amendment work
 (specifically the `subagent-driven-development` amendment), since the
 two will likely overlap in the same SKILL.md section.
 
+#### Source text (preserved here because it lives on a different machine)
+
+The CLAUDE.md content lives at `~/.claude/CLAUDE.md` on the chonkers
+(Windows) host where the c384d09 fix was authored. It does NOT exist
+in `~/.claude/CLAUDE.md` on the llamabox host where this handoff was
+written. Captured here verbatim from the chonkers report so the
+amendment work can be done from llamabox without round-tripping:
+
+> ## Parallel Worktree Agents
+>
+> When dispatching parallel Agent subagents with `isolation: "worktree"`, verify each
+> agent actually returned a `worktreePath` and `worktreeBranch` in its result before
+> trusting isolation. If an agent reports making commits but no worktree path comes
+> back, assume isolation failed — the agent likely operated on the parent working
+> tree and may have cross-contaminated with sibling agents. Signs of broken
+> isolation: merges fail with "not something we can merge", commits appear directly
+> on `main` without intermediate branches, or one agent's commit includes files
+> staged by another. If you see this, stop and investigate before dispatching more
+> parallel work.
+
+Compared to the c384d09 SKILL.md amendment (which only addresses the
+"untracked files in parent are invisible to worktree" subcase via a
+"Pre-Dispatch Checklist (Worktree Isolation)" section), the CLAUDE.md
+text is broader — it lists multiple failure signs (merges fail, direct
+main commits, cross-agent file staging) and prescribes a verification
+step (check the agent's tool result for `worktreePath`/`worktreeBranch`
+before trusting isolation). The merged amendment should incorporate
+both: the c384d09 checklist as a pre-dispatch step, plus the CLAUDE.md
+verification + failure-signs as a post-dispatch step.
+
 ### Bridge to the prune-spec-permanence work
 
 `c384d09` already takes a half-step toward "specs/plans as ephemeral
