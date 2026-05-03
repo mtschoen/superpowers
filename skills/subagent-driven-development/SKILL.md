@@ -95,7 +95,7 @@ Use the least powerful model that can handle each role to conserve cost and incr
 **Architecture, design, and review tasks**: use the most capable available model.
 
 **Task complexity signals:**
-- Touches 1-2 files with a complete spec → cheap model
+- Touches 1-2 files with a fully-specified task → cheap model
 - Touches multiple files with integration concerns → standard model
 - Requires design judgment or broad codebase understanding → most capable model
 
@@ -195,7 +195,7 @@ Implementer: "Got it. Implementing now..."
   - Committed
 
 [Dispatch plan compliance reviewer]
-Plan reviewer: ✅ Spec compliant - all requirements met, nothing extra
+Plan reviewer: ✅ Plan compliant - all requirements met, nothing extra
 
 [Get git SHAs, dispatch code quality reviewer]
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
@@ -216,14 +216,14 @@ Implementer:
 
 [Dispatch plan compliance reviewer]
 Plan reviewer: ❌ Issues:
-  - Missing: Progress reporting (spec says "report every 100 items")
+  - Missing: Progress reporting (plan says "report every 100 items")
   - Extra: Added --json flag (not requested)
 
 [Implementer fixes issues]
 Implementer: Removed --json flag, added progress reporting
 
-[Spec reviewer reviews again]
-Plan reviewer: ✅ Spec compliant now
+[Plan reviewer reviews again]
+Plan reviewer: ✅ Plan compliant now
 
 [Dispatch code quality reviewer]
 Code reviewer: Strengths: Solid. Issues (Important): Magic number (100)
@@ -287,7 +287,7 @@ Done!
 - Make subagent read plan file (provide full text instead)
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)
-- Accept "close enough" on plan compliance (spec reviewer found issues = not done)
+- Accept "close enough" on plan compliance (plan reviewer found issues = not done)
 - Skip review loops (reviewer found issues = implementer fixes = review again)
 - Let implementer self-review replace actual review (both are needed)
 - **Start code quality review before plan compliance is ✅** (wrong order)
