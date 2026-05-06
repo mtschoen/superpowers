@@ -4,6 +4,15 @@ Register this worktree as `superpowers@superpowers-dev` in Claude Code's
 installed plugins, and disable the published `superpowers@claude-plugins-official`
 so it stops shadowing.
 
+Three files get reconciled:
+  * known_marketplaces.json — registers the `superpowers-dev` marketplace
+    with installLocation pointing AT the worktree (not a copy under
+    ~/.claude/plugins/marketplaces/), so skill edits go live without a
+    re-clone.
+  * installed_plugins.json — registers `superpowers@superpowers-dev` with
+    installPath pointing at the worktree.
+  * settings.json — enables the dev plugin and disables the published one.
+
 Workaround for upstream bug: anthropics/claude-code#20593 (plugin installer
 matches on plugin name only and ignores the @marketplace qualifier).
 
@@ -22,11 +31,17 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Windows: Python defaults stdout to cp1252, which crashes on the Unicode
+# arrow below. Reconfigure once so the script runs without PYTHONIOENCODING.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 WORKTREE_PATH = Path(__file__).resolve().parent.parent
 CLAUDE_HOME = Path.home() / ".claude"
+KNOWN_MARKETPLACES = CLAUDE_HOME / "plugins" / "known_marketplaces.json"
 INSTALLED_PLUGINS = CLAUDE_HOME / "plugins" / "installed_plugins.json"
 SETTINGS = CLAUDE_HOME / "settings.json"
 
+MARKETPLACE_KEY = "superpowers-dev"
 DEV_KEY = "superpowers@superpowers-dev"
 OFFICIAL_KEY = "superpowers@claude-plugins-official"
 
@@ -41,6 +56,31 @@ def backup(path: Path) -> Path:
 def load_worktree_version() -> str:
     plugin_json = WORKTREE_PATH / ".claude-plugin" / "plugin.json"
     return json.loads(plugin_json.read_text())["version"]
+
+
+def fix_known_marketplaces() -> bool:
+    data = json.loads(KNOWN_MARKETPLACES.read_text())
+    desired_source = {"source": "directory", "path": str(WORKTREE_PATH)}
+    desired_install_location = str(WORKTREE_PATH)
+
+    existing = data.get(MARKETPLACE_KEY)
+    if (
+        isinstance(existing, dict)
+        and existing.get("source") == desired_source
+        and existing.get("installLocation") == desired_install_location
+    ):
+        return False
+
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    data[MARKETPLACE_KEY] = {
+        "source": desired_source,
+        "installLocation": desired_install_location,
+        "lastUpdated": now,
+    }
+    backup_path = backup(KNOWN_MARKETPLACES)
+    KNOWN_MARKETPLACES.write_text(json.dumps(data, indent=2) + "\n")
+    print(f"  known_marketplaces.json: updated (backup: {backup_path.name})")
+    return True
 
 
 def fix_installed_plugins(version: str) -> bool:
@@ -105,6 +145,7 @@ def main() -> int:
     print(f"Registering {DEV_KEY} → {WORKTREE_PATH} (version {version})")
 
     changed_any = False
+    changed_any |= fix_known_marketplaces()
     changed_any |= fix_installed_plugins(version)
     changed_any |= fix_settings()
 

@@ -19,12 +19,18 @@ import json
 import sys
 from pathlib import Path
 
+# Windows: Python defaults stdout to cp1252, which crashes on the warning
+# emoji below. Reconfigure once so the SessionStart hook runs cleanly.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 WORKTREE_PATH = Path(__file__).resolve().parent.parent
 CLAUDE_HOME = Path.home() / ".claude"
+KNOWN_MARKETPLACES = CLAUDE_HOME / "plugins" / "known_marketplaces.json"
 INSTALLED_PLUGINS = CLAUDE_HOME / "plugins" / "installed_plugins.json"
 SETTINGS = CLAUDE_HOME / "settings.json"
 FIXIT = f"python3 {WORKTREE_PATH}/dev/superpowers-dev-fixit.py"
 
+MARKETPLACE_KEY = "superpowers-dev"
 DEV_KEY = "superpowers@superpowers-dev"
 OFFICIAL_KEY = "superpowers@claude-plugins-official"
 
@@ -33,9 +39,27 @@ def find_problems() -> list[str]:
     problems: list[str] = []
 
     try:
+        marketplaces = json.loads(KNOWN_MARKETPLACES.read_text())
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        problems.append(f"could not read {KNOWN_MARKETPLACES}: {exc}")
+        marketplaces = {}
+
+    market_entry = marketplaces.get(MARKETPLACE_KEY)
+    if not isinstance(market_entry, dict):
+        problems.append(
+            f"marketplace {MARKETPLACE_KEY!r} not registered in known_marketplaces.json. "
+            f"Loader can't resolve {DEV_KEY}, so the plugin silently won't load."
+        )
+    elif market_entry.get("installLocation") != str(WORKTREE_PATH):
+        problems.append(
+            f"marketplace {MARKETPLACE_KEY!r} installLocation is "
+            f"{market_entry.get('installLocation')!r}, expected {str(WORKTREE_PATH)!r}."
+        )
+
+    try:
         installed = json.loads(INSTALLED_PLUGINS.read_text())
     except (FileNotFoundError, json.JSONDecodeError) as exc:
-        return [f"could not read {INSTALLED_PLUGINS}: {exc}"]
+        return problems + [f"could not read {INSTALLED_PLUGINS}: {exc}"]
 
     entries = installed.get("plugins", {}).get(DEV_KEY, [])
     user_entries = [e for e in entries if e.get("scope") == "user"]
