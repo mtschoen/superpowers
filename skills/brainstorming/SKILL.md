@@ -146,9 +146,15 @@ After writing the spec document, look at it with fresh eyes:
 Fix any issues inline. No need to re-review — just fix and move on.
 
 **User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+After the spec review loop passes, present the spec for user review.
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan. (Reminder: it's a working draft — it'll be distilled into the plan header and deleted at the next handoff.)"
+Check whether `$SUPERPOWERS_OPEN_CMD` is set (run `echo "$SUPERPOWERS_OPEN_CMD"` via Bash).
+
+- **If set:** run `$SUPERPOWERS_OPEN_CMD <spec-path>` via Bash to open the file in the user's editor, then say:
+  > "Spec written and committed — opened `<path>` in your editor. Let me know if you want any changes before we write the implementation plan. (Reminder: it's a working draft — it'll be distilled into the plan header and deleted at the next handoff.)"
+
+- **If not set:** use the Read tool to load the spec file and present its full contents inline, then say:
+  > "Spec written and committed to `<path>`. Let me know if you want any changes before we write the implementation plan. (Reminder: it's a working draft — it'll be distilled into the plan header and deleted at the next handoff.)"
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 

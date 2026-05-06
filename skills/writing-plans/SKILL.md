@@ -209,7 +209,11 @@ spec ever existed.
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After saving the plan, present it for review and offer execution choice.
+
+Check whether `$SUPERPOWERS_OPEN_CMD` is set (run `echo "$SUPERPOWERS_OPEN_CMD"` via Bash). If set, run `$SUPERPOWERS_OPEN_CMD <plan-path>` via Bash to open the plan in the user's editor. If not set, use the Read tool to load the plan file and present its full contents inline.
+
+Then say:
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Two execution options:**
 
