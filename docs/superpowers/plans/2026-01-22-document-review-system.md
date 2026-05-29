@@ -1,5 +1,16 @@
 # Document Review System Implementation Plan
 
+> **⚠️ SUPERSEDED / ABANDONED (reconciled 2026-05-28).** Do NOT implement this plan.
+> The reviewer-prompt templates were created (`skills/brainstorming/spec-document-reviewer-prompt.md`,
+> `skills/writing-plans/plan-document-reviewer-prompt.md`), but the subagent-dispatched review-loop
+> architecture this plan describes was **replaced by lightweight inline self-review** in commit
+> `e6221a4` (2026-03-20). Rationale from that commit: the subagent review loop added ~25 min overhead
+> with no measurable quality improvement across regression testing (5 versions × 5 trials). Current
+> review architecture: inline self-review in `brainstorming` + `writing-plans`, and subagent-driven
+> plan-compliance review in `subagent-driven-development`. The companion spec
+> `docs/superpowers/specs/2026-01-22-document-review-system-design.md` is leftover scaffolding and can
+> be deleted.
+
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan.
 
 **Goal:** Add spec and plan document review loops to the brainstorming and writing-plans skills.
