@@ -165,6 +165,23 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
+## Documentation Task
+
+Behavior a plan changes is usually described somewhere - a README usage
+line, a CLAUDE.md command, a docstring. A plan that ships those changes
+but not the doc updates ships drift. Include an explicit **Documentation**
+task near the end of each feature (or each phase that alters
+externally-described behavior):
+
+- [ ] **Update docs affected by this feature** - run the docs-update
+  check across README, CLAUDE.md / AGENTS.md, in-repo docs, and inline
+  doc comments; bring any drifted statements in line with the new
+  behavior; commit the doc edits with (or immediately after) the code.
+
+This is distinct from the branch-finish "fold durable insight into docs"
+step (that captures *new* architectural insight; this fixes *drifted*
+existing docs).
+
 ## No Placeholders
 
 Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:

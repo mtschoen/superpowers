@@ -92,6 +92,13 @@ Examples of insight worth folding into proper docs:
 Most work yields nothing in this category. That's normal. Don't
 fabricate insight to justify the step.
 
+**1a. Check for docs drift across the branch.** Beyond folding in new
+insight, run the docs-update check against the branch diff
+(`git diff <base>..HEAD`): did any change on this branch make an existing
+doc statement false (a renamed flag in the README, a changed command in
+CLAUDE.md, a stale docstring)? Fix drift now, in this branch, before it
+merges. See the docs-update skill for the per-surface check.
+
 **2. Delete the plan file.**
 
 If insight was folded in:
