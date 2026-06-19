@@ -1,7 +1,7 @@
 # Task: Remove the "Discard" option from finishing-a-development-branch
 
 **Date:** 2026-05-29
-**Status:** Todo
+**Status:** Done (2026-06-19)
 **Source:** User feedback — `finishing-a-development-branch` presented "Discard this work" as option 4 immediately after a 12-commit feature was completed and verified. Offering destructive deletion deadpan right after success feels dangerous and out of place.
 
 ---
@@ -24,20 +24,20 @@ Drop option 4 (**Discard this work**) from the skill entirely. The skill should 
 
 ## Edit checklist (Option 4 is referenced in several places — remove all)
 
-- [ ] **Step 3 (Present Options):** change the option block from 4 items to 3; drop the `4. Discard this work` line.
-- [ ] **Step 4 intro:** the line "For Options 1 and 2: do Plan Disposal first … For Option 3, no disposal … For Option 4, the whole branch is being discarded; the plan goes with it." — drop the Option 4 clause.
-- [ ] **Step 4:** delete the entire `#### Option 4: Discard` subsection (the typed-`discard` confirmation flow).
-- [ ] **Step 5 (Cleanup):** change "For Options 1, 2, 4:" → "For Options 1 and 2:" (note: only Option 1 actually triggers branch cleanup; Option 2 keeps the branch). Remove the `git branch -D <feature-branch>` force-delete line and its "Option 4 (discarded …)" comment, keeping only the Option 1 `git branch -d` safe-delete.
-- [ ] **Quick Reference table:** delete the `4. Discard` row.
-- [ ] **Common Mistakes:** remove the "No confirmation for discard" entry (now moot).
-- [ ] **Red Flags:** remove "Delete work without confirmation" (Never) and "Get typed confirmation for Option 4" (Always); reword "Clean up worktree for Options 1 & 4 only" → "Clean up worktree for Option 1 only".
-- [ ] Re-read the whole SKILL.md after edits to confirm no dangling "Option 4" / "discard" references remain and the option numbering is internally consistent.
+- [x] **Step 3 (Present Options):** change the option block from 4 items to 3; drop the `4. Discard this work` line.
+- [x] **Step 4 intro:** the line "For Options 1 and 2: do Plan Disposal first … For Option 3, no disposal … For Option 4, the whole branch is being discarded; the plan goes with it." — drop the Option 4 clause.
+- [x] **Step 4:** delete the entire `#### Option 4: Discard` subsection (the typed-`discard` confirmation flow).
+- [x] **Step 5 (Cleanup):** change "For Options 1, 2, 4:" → "For Options 1 and 2:" (note: only Option 1 actually triggers branch cleanup; Option 2 keeps the branch). Remove the `git branch -D <feature-branch>` force-delete line and its "Option 4 (discarded …)" comment, keeping only the Option 1 `git branch -d` safe-delete.
+- [x] **Quick Reference table:** delete the `4. Discard` row.
+- [x] **Common Mistakes:** remove the "No confirmation for discard" entry (now moot).
+- [x] **Red Flags:** remove "Delete work without confirmation" (Never) and "Get typed confirmation for Option 4" (Always); reword "Clean up worktree for Options 1 & 4 only" → "Clean up worktree for Option 1 only".
+- [x] Re-read the whole SKILL.md after edits to confirm no dangling "Option 4" / "discard" references remain and the option numbering is internally consistent.
 
 ## Verification
 
-- [ ] `grep -ri discard skills/finishing-a-development-branch/` returns nothing (or only unrelated prose).
-- [ ] The four-options→three-options change reads cleanly; the Quick Reference table still aligns.
-- [ ] If the repo has a skills-lint / dev-check (`dev/superpowers-dev-check.py`), run it.
+- [x] `grep -ri discard skills/finishing-a-development-branch/` returns nothing (or only unrelated prose).
+- [x] The four-options→three-options change reads cleanly; the Quick Reference table still aligns.
+- [x] If the repo has a skills-lint / dev-check (`dev/superpowers-dev-check.py`), run it.
 
 ## Note
 
