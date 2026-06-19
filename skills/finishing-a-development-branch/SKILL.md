@@ -48,7 +48,7 @@ Or ask: "This branch split from main - is that correct?"
 
 ### Step 3: Present Options
 
-Present exactly these 4 options:
+Present exactly these 3 options:
 
 ```
 Implementation complete. What would you like to do?
@@ -56,7 +56,6 @@ Implementation complete. What would you like to do?
 1. Merge back to <base-branch> locally
 2. Push and create a Pull Request
 3. Keep the branch as-is (I'll handle it later)
-4. Discard this work
 
 Which option?
 ```
@@ -66,8 +65,7 @@ Which option?
 ### Step 4: Execute Choice
 
 **For Options 1 and 2: do Plan Disposal first (see below).** For
-Option 3, no disposal — work is paused. For Option 4, the whole
-branch is being discarded; the plan goes with it.
+Option 3, no disposal — work is paused.
 
 #### Plan Disposal (Options 1 and 2)
 
@@ -163,31 +161,9 @@ Report: "Keeping branch <name>. Worktree preserved at <path>."
 
 **Don't cleanup worktree.**
 
-#### Option 4: Discard
-
-**Confirm first:**
-```
-This will permanently delete:
-- Branch <name>
-- All commits: <commit-list>
-- Worktree at <path>
-
-Type 'discard' to confirm.
-```
-
-Wait for exact confirmation.
-
-If confirmed:
-```bash
-git checkout <base-branch>
-```
-
-Then: Cleanup worktree (Step 5) — worktree removal must happen
-before `git branch -D`, same reason as Option 1.
-
 ### Step 5: Cleanup Worktree and Feature Branch
 
-**For Options 1, 2, 4:**
+**For Options 1 and 2:**
 
 Find the worktree that has the feature branch checked out — do NOT
 grep for the *current* branch, because after `git checkout <base>`
@@ -231,9 +207,6 @@ longer "checked out" anywhere and can be deleted safely:
 ```bash
 # Option 1 (merged — safe delete):
 git branch -d <feature-branch>
-
-# Option 4 (discarded — force delete, already confirmed in Step 4):
-git branch -D <feature-branch>
 ```
 
 **Defensive prune.** Even on successful runs it's cheap to finish
@@ -250,7 +223,6 @@ legitimate orphans you want to recover.
 | 1. Merge locally | ✓ | - | - | ✓ |
 | 2. Create PR | - | ✓ | ✓ | - |
 | 3. Keep as-is | - | - | ✓ | - |
-| 4. Discard | - | - | - | ✓ (force) |
 
 ## Common Mistakes
 
@@ -260,29 +232,23 @@ legitimate orphans you want to recover.
 
 **Open-ended questions**
 - **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 4 structured options
+- **Fix:** Present exactly 3 structured options
 
 **Automatic worktree cleanup**
 - **Problem:** Remove worktree when might need it (Option 2, 3)
-- **Fix:** Only cleanup for Options 1 and 4
-
-**No confirmation for discard**
-- **Problem:** Accidentally delete work
-- **Fix:** Require typed "discard" confirmation
+- **Fix:** Only cleanup for Option 1
 
 ## Red Flags
 
 **Never:**
 - Proceed with failing tests
 - Merge without verifying tests on result
-- Delete work without confirmation
 - Force-push without explicit request
 
 **Always:**
 - Verify tests before offering options
-- Present exactly 4 options
-- Get typed confirmation for Option 4
-- Clean up worktree for Options 1 & 4 only
+- Present exactly 3 options
+- Clean up worktree for Option 1 only
 
 ## Integration
 
