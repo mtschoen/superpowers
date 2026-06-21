@@ -11,7 +11,7 @@ Live in `tests/`. Currently:
 
 - `tests/brainstorm-server/` — node test suite for the brainstorm server JS code.
 - `tests/opencode/` — bash tests for OpenCode plugin loading, bootstrap caching, and tool registration.
-- `tests/codex-plugin-sync/` — bash sync verification.
+- `tests/codex-plugin-sync/` — bash sync verification (requires `rsync`; see Prerequisites below).
 - `tests/kimi/` — bash/Python checks for Kimi plugin manifest wiring.
 - `tests/claude-code/test-helpers.sh`, `analyze-token-usage.py` — utilities used by remaining bash tests.
 - `tests/claude-code/test-subagent-driven-development.sh` — agent-can-describe-SDD test (no drill counterpart; tests description-recall, not behavior).
@@ -20,6 +20,8 @@ Live in `tests/`. Currently:
 - `tests/explicit-skill-requests/` — Haiku-specific, multi-turn, and skill-name-prompted tests not covered by drill.
 
 Run plugin tests via the relevant directory's `run-*.sh` or `npm test`.
+
+**Prerequisites.** Most plugin tests need `bash` plus `node` (brainstorm-server, opencode) or `python3` (kimi). The `tests/codex-plugin-sync/` suite exercises `scripts/sync-to-codex-plugin.sh`, so it additionally needs that script's tools on `PATH`: `rsync`, `git`, `gh`, and `python3`. Without `rsync` the script exits at its preflight check and every assertion in that suite fails. `rsync` is not bundled with Git for Windows / Git Bash, so install it (for example, add the MSYS2 `rsync` package and its runtime DLLs to `PATH`) before running that suite on Windows.
 
 ## Skill behavior evals
 
