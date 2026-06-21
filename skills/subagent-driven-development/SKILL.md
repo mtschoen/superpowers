@@ -82,6 +82,78 @@ digraph process {
 }
 ```
 
+## Parallel Dispatch (Worktree Isolation)
+
+The per-task loop above is serial by default. When the plan's tasks are
+genuinely independent (disjoint files, no ordering dependency), you may
+dispatch multiple implementers **in parallel**, each in its own isolated
+git worktree (`isolation: "worktree"`). This requires the discipline below
+— without it, parallel agents silently corrupt each other through the
+shared parent working tree.
+
+### Pre-Dispatch Checklist
+
+Run this check **before every parallel dispatch batch**:
+
+1. **Commit (or inline) every file the prompt references.** Worktrees check out from a git commit — untracked **or git-ignored** files in the parent working tree are **invisible** to the worktree. Task briefs and reports under `.superpowers/sdd/` are git-ignored scratch, so a worktree-isolated implementer cannot read a brief left there: it will either fail to find it or silently fall back to the parent path, breaking isolation entirely. For worktree dispatch, **paste the task's full text inline in the prompt** rather than handing it a brief-file path it can't see — or write the brief to a tracked path and commit it before dispatching.
+   - Run `git status` and verify that any file paths mentioned in your prompt are tracked and committed.
+
+2. **Verify isolation after dispatch.** When the subagent returns, check the tool result for a `worktreePath` and `worktreeBranch`. If these are missing but the agent reports making commits, assume isolation failed — the agent likely operated on the parent working tree, and when multiple agents are dispatched in parallel, may have cross-contaminated with sibling agents. Signs of broken isolation:
+   - Agent reports `Branch: master` (or whatever the parent branch is) instead of a `worktree-agent-*` branch.
+   - Agent's Bash commands use `cd /path/to/parent/repo` instead of the worktree path.
+   - The worktree directory doesn't exist on disk after the agent completes.
+   - Uncommitted changes appear in the parent working tree matching the agent's reported work.
+   - Merges fail with `not something we can merge` — the `worktree-agent-*` branch the agent claimed to commit on never existed because isolation failed.
+   - One agent's commit includes files that were only staged by another sibling agent (cross-contamination via the shared parent tree).
+
+   If you see any of these signs, stop and investigate before dispatching more parallel work.
+
+3. **Recovery if isolation fails.** If an agent operated on the parent tree:
+   - Check `git status` in the parent for the agent's changes.
+   - Verify tests pass on those changes.
+   - Commit them manually with the planned commit message.
+   - Do **not** re-dispatch — the work is done, just in the wrong place.
+
+4. **Permission allowlist must live in global settings.** When subagents are dispatched with `isolation: "worktree"`, their cwd becomes a linked worktree whose `.git` file makes it its own root. Claude Code's permission resolution searches upward for `.claude/settings.local.json` but stops at that boundary — it does **not** find the outer project's `.claude/settings.local.json`. Effect: project-local grants like `Bash(*)` don't apply to worktree subagents, and they stall on permission prompts that the user can't see (especially under `run_in_background: true`). Put broad grants in `~/.claude/settings.json` (global user settings) so they apply everywhere including worktrees:
+
+   ```json
+   { "permissions": { "allow": ["Bash(*)"] } }
+   ```
+
+### Post-Dispatch: Merging Parallel Branches
+
+When a wave of parallel implementers all return cleanly, each on its own `worktree-agent-*` branch with disjoint files:
+
+**Cherry-pick for linear history.** Cherry-pick each agent's commit onto the base branch rather than merging each branch with `--no-ff`:
+
+```bash
+git cherry-pick <sha1> <sha2> <sha3> ...
+```
+
+This produces a clean linear history, conflict-free as long as each worktree touched different files. `git merge --no-ff` per-branch generates a merge commit per branch — noisy and unnecessary when the branches are each base + 1 commit.
+
+**Cleanup after merge.** Remove the worktrees and delete the branches, or worktree scratch accumulates inherited cruft and the branch list gets messy:
+
+```bash
+for w in agent-X agent-Y agent-Z; do
+  git worktree remove --force <worktrees-dir>/$w
+  git branch -D worktree-agent-$w
+done
+```
+
+**CRITICAL pitfall — never `git add -A` while worktrees exist.** If the worktrees directory contains active worktrees, `git add -A` from the parent working tree picks them up as **embedded git repositories** (gitlinks) and silently adds them to the index. Committing then pollutes the branch with submodule references that don't resolve.
+
+If it happens:
+```bash
+git reset --soft HEAD~1                  # undo the bad commit, keep staging
+git restore --staged <worktrees-dir>/    # unstage the gitlinks
+git commit -m "..."                      # re-commit the legitimate changes
+```
+
+Prevent it by staging files explicitly (`git add file1 file2 ...`) while worktrees are alive. Once worktrees are removed, `git add -A` is safe again.
+
+**Reviews can be parallel too.** The task reviewer is read-only — after all implementers return, dispatch all task reviewers in parallel (one per task), then handle their findings. No contention.
+
 ## Pre-Flight Plan Review
 
 Before dispatching Task 1, scan the plan once for conflicts:
@@ -370,7 +442,7 @@ Done!
 - Start implementation on main/master branch without explicit user consent
 - Skip task review, or accept a report missing either verdict (spec compliance AND task quality are both required)
 - Proceed with unfixed issues
-- Dispatch multiple implementation subagents in parallel (conflicts)
+- Dispatch multiple implementation subagents in parallel **without worktree isolation** (conflicts) — parallel dispatch is allowed only when each implementer runs in its own isolated worktree on independent tasks (see Parallel Dispatch)
 - Make a subagent read the whole plan file (hand it its task brief —
   `scripts/task-brief` — instead)
 - Skip scene-setting context (subagent needs to understand where task fits)
