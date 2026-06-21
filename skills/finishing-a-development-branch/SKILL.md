@@ -9,7 +9,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 Guide completion of development work by presenting clear options and handling chosen workflow.
 
-**Core principle:** Verify tests → Present options → Execute choice → Clean up.
+**Core principle:** Verify tests → Detect environment → Present options → Execute choice → Clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
@@ -37,7 +37,24 @@ Stop. Don't proceed to Step 2.
 
 **If tests pass:** Continue to Step 2.
 
-### Step 2: Determine Base Branch
+### Step 2: Detect Environment
+
+**Determine workspace state before presenting options:**
+
+```bash
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+```
+
+This determines which menu to show and how cleanup works:
+
+| State | Menu | Cleanup |
+|-------|------|---------|
+| `GIT_DIR == GIT_COMMON` (normal repo) | Standard 3 options | No worktree to clean up |
+| `GIT_DIR != GIT_COMMON`, named branch | Standard 3 options | Provenance-based (see Step 6) |
+| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | No cleanup (externally managed) |
+
+### Step 3: Determine Base Branch
 
 ```bash
 # Try common base branches
@@ -46,9 +63,9 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 
 Or ask: "This branch split from main - is that correct?"
 
-### Step 3: Present Options
+### Step 4: Present Options
 
-Present exactly these 3 options:
+**Normal repo and named-branch worktree — present exactly these 3 options:**
 
 ```
 Implementation complete. What would you like to do?
@@ -60,9 +77,20 @@ Implementation complete. What would you like to do?
 Which option?
 ```
 
+**Detached HEAD — present exactly these 2 options:**
+
+```
+Implementation complete. You're on a detached HEAD (externally managed workspace).
+
+1. Push as new branch and create a Pull Request
+2. Keep as-is (I'll handle it later)
+
+Which option?
+```
+
 **Don't add explanation** - keep options concise.
 
-### Step 4: Execute Choice
+### Step 5: Execute Choice
 
 **For Options 1 and 2: do Plan Disposal first (see below).** For
 Option 3, no disposal — work is paused.
@@ -119,22 +147,26 @@ Then proceed to your chosen option below.
 #### Option 1: Merge Locally
 
 ```bash
-# Switch to base branch
+# Get main repo root for CWD safety
+MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
+cd "$MAIN_ROOT"
+
+# Merge first — verify success before removing anything
 git checkout <base-branch>
-
-# Pull latest
 git pull
-
-# Merge feature branch
 git merge <feature-branch>
 
 # Verify tests on merged result
 <test command>
+
+# Only after merge succeeds: cleanup worktree (Step 6), then delete branch
 ```
 
-Then: Cleanup worktree (Step 5) — **worktree removal must happen
-before `git branch -d`**, because the feature branch is still
-checked out in the agent worktree until the worktree is removed.
+Then: Cleanup worktree (Step 6), then delete branch:
+
+```bash
+git branch -d <feature-branch>
+```
 
 #### Option 2: Push and Create PR
 
@@ -153,7 +185,7 @@ EOF
 )"
 ```
 
-Then: Cleanup worktree (Step 5)
+**Do NOT clean up worktree** — user needs it alive to iterate on PR feedback.
 
 #### Option 3: Keep As-Is
 
@@ -161,26 +193,25 @@ Report: "Keeping branch <name>. Worktree preserved at <path>."
 
 **Don't cleanup worktree.**
 
-### Step 5: Cleanup Worktree and Feature Branch
+### Step 6: Cleanup Workspace
 
-**For Options 1 and 2:**
-
-Find the worktree that has the feature branch checked out — do NOT
-grep for the *current* branch, because after `git checkout <base>`
-in Step 4 the current branch is the base branch, not the feature
-branch.
+**Only runs for Option 1.** Options 2 and 3 always preserve the worktree.
 
 ```bash
-# Find the worktree path for the feature branch (column 3 of
-# `git worktree list` is the bracketed branch name).
-worktree_path=$(git worktree list | awk -v b="[<feature-branch>]" '$3==b {print $1}')
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+WORKTREE_PATH=$(git rev-parse --show-toplevel)
 ```
 
-If `$worktree_path` is non-empty and points to an agent worktree
-(typically under `.claude/worktrees/`), remove it:
+**If `GIT_DIR == GIT_COMMON`:** Normal repo, no worktree to clean up. Done.
+
+**If worktree path is under `.worktrees/` or `worktrees/`:** Superpowers created this worktree — we own cleanup.
 
 ```bash
-git worktree remove "$worktree_path"
+MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
+cd "$MAIN_ROOT"
+git worktree remove "$WORKTREE_PATH"
+git worktree prune  # Self-healing: clean up any stale registrations
 ```
 
 **Run this from the main repo, never from inside the worktree
@@ -191,38 +222,15 @@ will report "Device or resource busy". This skill is intended to
 be invoked by the parent context that dispatched the subagent,
 *after* the subagent has returned, not by the subagent on itself.
 
-**Self-heal stale registrations.** If the worktree directory was
-already deleted outside git (common when a `.claude/` cleanup or
-the OS reclaimed it), `git worktree remove` will error. In that
-case, prune any registrations whose gitdir points to a missing
-location:
-
-```bash
-git worktree prune -v
-```
-
-After the worktree is gone (or pruned), the feature branch is no
-longer "checked out" anywhere and can be deleted safely:
-
-```bash
-# Option 1 (merged — safe delete):
-git branch -d <feature-branch>
-```
-
-**Defensive prune.** Even on successful runs it's cheap to finish
-with `git worktree prune` so any sibling stale registrations (left
-behind by earlier sessions that didn't clean up) get swept up too.
-
-**For Option 3:** Keep worktree. Don't prune — you might have
-legitimate orphans you want to recover.
+**Otherwise:** The host environment (harness) owns this workspace. Do NOT remove it. If your platform provides a workspace-exit tool, use it. Otherwise, leave the workspace in place.
 
 ## Quick Reference
 
 | Option | Merge | Push | Keep Worktree | Cleanup Branch |
 |--------|-------|------|---------------|----------------|
-| 1. Merge locally | ✓ | - | - | ✓ |
-| 2. Create PR | - | ✓ | ✓ | - |
-| 3. Keep as-is | - | - | ✓ | - |
+| 1. Merge locally | yes | - | - | yes |
+| 2. Create PR | - | yes | yes | - |
+| 3. Keep as-is | - | - | yes | - |
 
 ## Common Mistakes
 
@@ -231,12 +239,24 @@ legitimate orphans you want to recover.
 - **Fix:** Always verify tests before offering options
 
 **Open-ended questions**
-- **Problem:** "What should I do next?" → ambiguous
-- **Fix:** Present exactly 3 structured options
+- **Problem:** "What should I do next?" is ambiguous
+- **Fix:** Present exactly 3 structured options (or 2 for detached HEAD)
 
-**Automatic worktree cleanup**
-- **Problem:** Remove worktree when might need it (Option 2, 3)
+**Cleaning up worktree for Option 2**
+- **Problem:** Remove worktree user needs for PR iteration
 - **Fix:** Only cleanup for Option 1
+
+**Deleting branch before removing worktree**
+- **Problem:** `git branch -d` fails because worktree still references the branch
+- **Fix:** Merge first, remove worktree, then delete branch
+
+**Running git worktree remove from inside the worktree**
+- **Problem:** Command fails silently (or with a lock error on Windows) when CWD is inside the worktree being removed
+- **Fix:** Always `cd` to main repo root before `git worktree remove`
+
+**Cleaning up harness-owned worktrees**
+- **Problem:** Removing a worktree the harness created causes phantom state
+- **Fix:** Only clean up worktrees under `.worktrees/` or `worktrees/`
 
 ## Red Flags
 
@@ -244,11 +264,17 @@ legitimate orphans you want to recover.
 - Proceed with failing tests
 - Merge without verifying tests on result
 - Force-push without explicit request
+- Remove a worktree before confirming merge success
+- Clean up worktrees you didn't create (provenance check)
+- Run `git worktree remove` from inside the worktree
 
 **Always:**
 - Verify tests before offering options
-- Present exactly 3 options
+- Detect environment before presenting menu
+- Present exactly 3 options (or 2 for detached HEAD)
 - Clean up worktree for Option 1 only
+- `cd` to main repo root before worktree removal
+- Run `git worktree prune` after removal
 
 ## Integration
 
