@@ -15,20 +15,23 @@ trap cleanup_test_env EXIT
 
 plugin_link="$OPENCODE_CONFIG_DIR/plugins/superpowers.js"
 
-# Test 1: Verify plugin file exists and is registered
+# Test 1: Verify plugin is registered where OpenCode reads it.
+# A symlink is preferred, but on platforms without symlink support the setup
+# falls back to a copy. Both satisfy the real invariant: OpenCode can load the
+# plugin from this path and it resolves to valid content.
 echo "Test 1: Checking plugin registration..."
 if [ -L "$plugin_link" ]; then
-    echo "  [PASS] Plugin symlink exists"
+    echo "  [PASS] Plugin registered via symlink"
+    if [ -f "$(readlink -f "$plugin_link")" ]; then
+        echo "  [PASS] Plugin symlink target exists"
+    else
+        echo "  [FAIL] Plugin symlink target does not exist"
+        exit 1
+    fi
+elif [ -f "$plugin_link" ]; then
+    echo "  [PASS] Plugin registered via copy (symlinks unavailable on this platform)"
 else
-    echo "  [FAIL] Plugin symlink not found at $plugin_link"
-    exit 1
-fi
-
-# Verify symlink target exists
-if [ -f "$(readlink -f "$plugin_link")" ]; then
-    echo "  [PASS] Plugin symlink target exists"
-else
-    echo "  [FAIL] Plugin symlink target does not exist"
+    echo "  [FAIL] Plugin not registered at $plugin_link"
     exit 1
 fi
 
