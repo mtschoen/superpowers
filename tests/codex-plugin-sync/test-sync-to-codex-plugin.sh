@@ -573,6 +573,18 @@ main() {
     TEST_ROOT="$(mktemp -d)"
     trap cleanup EXIT
 
+    # Make line-ending handling hermetic. Without this, a host whose global or
+    # system git config sets core.autocrlf=true (the default on Git for Windows)
+    # checks out cloned destination fixtures with CRLF while the heredoc-written
+    # upstream fixtures stay LF. rsync then sees a size difference on every file
+    # and reports phantom changes, breaking the no-op apply assertions. Pin an
+    # isolated git config so every git invocation here -- including the sync
+    # script's internal clone -- uses LF consistently regardless of the host.
+    export GIT_CONFIG_GLOBAL="$TEST_ROOT/gitconfig"
+    export GIT_CONFIG_NOSYSTEM=1
+    git config --file "$GIT_CONFIG_GLOBAL" core.autocrlf false
+    git config --file "$GIT_CONFIG_GLOBAL" core.eol lf
+
     upstream="$TEST_ROOT/upstream"
     mixed_only_upstream="$TEST_ROOT/mixed-only-upstream"
     dest="$TEST_ROOT/destination"
