@@ -31,9 +31,15 @@ cp -r "$REPO_ROOT/skills" "$SUPERPOWERS_DIR/"
 mkdir -p "$(dirname "$SUPERPOWERS_PLUGIN_FILE")"
 cp "$REPO_ROOT/.opencode/plugins/superpowers.js" "$SUPERPOWERS_PLUGIN_FILE"
 
-# Register plugin via symlink (what OpenCode actually reads)
+# Register plugin where OpenCode reads it. Prefer a symlink; fall back to a
+# copy on platforms/filesystems without symlink support (e.g. Git Bash on
+# Windows without Developer Mode, where `ln -s` does not create a real symlink).
 mkdir -p "$OPENCODE_CONFIG_DIR/plugins"
-ln -sf "$SUPERPOWERS_PLUGIN_FILE" "$OPENCODE_CONFIG_DIR/plugins/superpowers.js"
+plugin_registration="$OPENCODE_CONFIG_DIR/plugins/superpowers.js"
+if ! ln -sf "$SUPERPOWERS_PLUGIN_FILE" "$plugin_registration" 2>/dev/null \
+    || [ ! -e "$plugin_registration" ]; then
+    cp "$SUPERPOWERS_PLUGIN_FILE" "$plugin_registration"
+fi
 
 # Create test skills in different locations for testing
 
