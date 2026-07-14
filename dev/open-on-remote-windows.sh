@@ -20,7 +20,10 @@ set -euo pipefail
 : "${LOCAL_SHARE_ROOT:?LOCAL_SHARE_ROOT must be set (local path prefix)}"
 : "${REMOTE_UNC_PREFIX:?REMOTE_UNC_PREFIX must be set (UNC share path)}"
 
-FILE="$1"
+# Resolve to an absolute path first: the LOCAL_SHARE_ROOT prefix strip below
+# is a no-op on a relative path, which would silently drop leading path
+# components and point the remote editor at a non-existent file (empty buffer).
+FILE="$(realpath -s -- "$1")"
 REMOTE_USER="${REMOTE_SSH%@*}"
 
 rel="${FILE#$LOCAL_SHARE_ROOT/}"
