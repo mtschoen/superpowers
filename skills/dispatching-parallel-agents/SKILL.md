@@ -98,7 +98,7 @@ the pre-dispatch checklist, verifying isolation held after each agent
 returns, and merging results back with cherry-pick.
 
 The same-tree model above stays the default for read/investigation
-fan-outs — reserve worktree overhead for when agents actually write.
+fan-outs - reserve worktree overhead for when agents actually write.
 
 ## Agent Prompt Structure
 
