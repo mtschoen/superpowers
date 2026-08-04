@@ -84,6 +84,22 @@ When agents return:
 - Run full test suite
 - Integrate all changes
 
+## Writing vs. Investigating: When You Need Worktree Isolation
+
+The pattern above assumes read-mostly work. If dispatched agents will
+**write** to the same repository instead, same-tree fan-out is unsafe: every
+agent shares one working tree, so one agent's edits or `git add` can
+silently clobber another's mid-flight changes, even on disjoint files.
+
+For write fan-outs, give each agent its own git worktree (`isolation:
+"worktree"`). See **superpowers:subagent-driven-development**'s "Parallel
+Dispatch (Worktree Isolation)" section for the discipline this requires:
+the pre-dispatch checklist, verifying isolation held after each agent
+returns, and merging results back with cherry-pick.
+
+The same-tree model above stays the default for read/investigation
+fan-outs - reserve worktree overhead for when agents actually write.
+
 ## Agent Prompt Structure
 
 Good agent prompts are:
