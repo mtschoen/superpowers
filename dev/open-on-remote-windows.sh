@@ -13,7 +13,10 @@ set -euo pipefail
 #   REMOTE_EDITOR      - Windows path to editor exe,
 #                        e.g. 'C:\Program Files\Sublime Text\sublime_text.exe'
 #   LOCAL_SHARE_ROOT   - Local path prefix to strip, e.g. "/home/alice"
-#   REMOTE_UNC_PREFIX  - UNC replacement, e.g. '\\myhost\alice'
+#   REMOTE_UNC_PREFIX  - Path prefix the remote editor sees, e.g. '\\myhost\alice'
+#                        or a mapped drive letter such as 'Y:'. A drive letter is
+#                        fine because the editor launches in the interactive
+#                        session, which has the mapping; the SSH session does not.
 
 : "${REMOTE_SSH:?REMOTE_SSH must be set (e.g. user@host)}"
 : "${REMOTE_EDITOR:?REMOTE_EDITOR must be set (Windows path to editor exe)}"
@@ -26,7 +29,7 @@ set -euo pipefail
 FILE="$(realpath -s -- "$1")"
 REMOTE_USER="${REMOTE_SSH%@*}"
 
-rel="${FILE#$LOCAL_SHARE_ROOT/}"
+rel="${FILE#"$LOCAL_SHARE_ROOT"/}"
 win_rel="${rel//\//\\}"
 unc_path="${REMOTE_UNC_PREFIX}\\${win_rel}"
 
@@ -43,5 +46,36 @@ for _ in $(seq 1 20); do
 done
 sleep 0.3
 
-ssh -o BatchMode=yes "${REMOTE_SSH}" \
-  "echo \"${REMOTE_EDITOR}\" \"${unc_path}\" > C:\Users\\${REMOTE_USER}\open-spec.bat & schtasks /create /tn OpenSpec /tr C:\Users\\${REMOTE_USER}\open-spec.bat /sc once /st 00:00 /f /IT >nul 2>&1 & schtasks /run /tn OpenSpec >nul 2>&1"
+# The remote command runs under whatever shell the Windows SSH server hands out,
+# which on this fleet is bash (git-bash), not cmd.exe. So the launcher is written
+# as a bash script piped over stdin rather than a cmd.exe "&" chain: under bash,
+# ">nul" creates a file literally named nul and "&" backgrounds rather than
+# sequences, so a cmd.exe-shaped chain fails while still looking plausible.
+# MSYS_NO_PATHCONV stops MSYS rewriting schtasks' /create and /tn into paths.
+#
+# The editor path and target are base64'd because ssh flattens its command into
+# one string that the remote shell re-parses: 'C:\Program Files\...' contains
+# spaces and would otherwise be word-split into broken arguments.
+#
+# schtasks /IT runs the task on the interactive desktop, which is what makes the
+# editor visible at all. It is also why REMOTE_UNC_PREFIX may be a mapped drive
+# letter: the SSH session cannot see that mapping, but the interactive one can.
+editor_b64="$(printf '%s' "${REMOTE_EDITOR}" | base64 -w0)"
+target_b64="$(printf '%s' "${unc_path}" | base64 -w0)"
+
+ssh -o BatchMode=yes "${REMOTE_SSH}" bash -s -- \
+  "${editor_b64}" "${target_b64}" "${REMOTE_USER}" <<'REMOTE'
+set -euo pipefail
+editor="$(printf '%s' "$1" | base64 -d)"
+target="$(printf '%s' "$2" | base64 -d)"
+remote_user="$3"
+
+bat_unix="/c/Users/${remote_user}/open-spec.bat"
+bat_win="C:\\Users\\${remote_user}\\open-spec.bat"
+
+printf '@echo off\r\nstart "" "%s" "%s"\r\n' "$editor" "$target" > "$bat_unix"
+
+export MSYS_NO_PATHCONV=1
+schtasks /create /tn OpenSpec /tr "$bat_win" /sc once /st 00:00 /f /IT >/dev/null
+schtasks /run /tn OpenSpec >/dev/null
+REMOTE
