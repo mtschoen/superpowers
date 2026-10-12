@@ -116,7 +116,8 @@ doc statement false (a renamed flag in the README, a changed command in
 CLAUDE.md, a stale docstring)? Fix drift now, in this branch, before it
 merges. See the docs-update skill for the per-surface check.
 
-**2. Delete the plan file.**
+**2. Delete the plan file and the spec it names** (the header's `Spec:`
+line; add `git rm <spec-file>` to the commands below when it exists).
 
 If insight was folded in:
 
