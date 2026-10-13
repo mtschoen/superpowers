@@ -63,8 +63,10 @@ esac
 # instead of looking like "another plan owns this workspace".
 io_fail() { echo "sdd-workspace: $1" >&2; exit 1; }
 
-# Print the workspace's recorded plan id; nonzero exit only for a read error.
-marker_of() { cat -- "$1/plan-path" 2>/dev/null || io_fail "cannot read $1/plan-path"; }
+# Read the workspace's recorded plan id into $marker. Runs in the current
+# shell, never in a command substitution, so a read error exits the whole
+# helper instead of looking like "another plan owns this workspace".
+read_marker() { marker=$(cat -- "$1/plan-path" 2>/dev/null) || io_fail "cannot read $1/plan-path"; }
 
 # True when the workspace at $1 is (or becomes) this plan's: an existing
 # marker must name this plan; a missing marker means a new workspace or a
@@ -72,7 +74,8 @@ marker_of() { cat -- "$1/plan-path" 2>/dev/null || io_fail "cannot read $1/plan-
 # Returns 1 only for a successfully read marker naming a different plan.
 owns() {
   if [ -e "$1/plan-path" ]; then
-    [ "$(marker_of "$1")" = "$plan_id" ]
+    read_marker "$1"
+    [ "$marker" = "$plan_id" ]
   else
     mkdir -p -- "$1" || io_fail "cannot create $1"
     printf '%s\n' "$plan_id" > "$1/plan-path" || io_fail "cannot write $1/plan-path"
@@ -82,7 +85,9 @@ owns() {
 # True when the workspace at $1 already carries this plan's marker. Looked up
 # before claiming so a plan keeps its workspace after a sibling's is deleted.
 marked_for_plan() {
-  [ -e "$1/plan-path" ] && [ "$(marker_of "$1")" = "$plan_id" ]
+  [ -e "$1/plan-path" ] || return 1
+  read_marker "$1"
+  [ "$marker" = "$plan_id" ]
 }
 
 parent=$(basename "$plan_dir")
@@ -91,10 +96,10 @@ for candidate in "$base/$slug" "$base/$slug-$parent"; do
   if marked_for_plan "$candidate"; then dir=$candidate; break; fi
 done
 if [ -z "$dir" ]; then
-  n=2
-  while [ -e "$base/$slug-$parent-$n" ]; do
-    if marked_for_plan "$base/$slug-$parent-$n"; then dir="$base/$slug-$parent-$n"; break; fi
-    n=$((n + 1))
+  # Every existing numbered workspace, holes included: a deleted sibling's
+  # number must not hide a later workspace this plan already owns.
+  for candidate in "$base/$slug-$parent"-[0-9]*; do
+    if marked_for_plan "$candidate"; then dir=$candidate; break; fi
   done
 fi
 

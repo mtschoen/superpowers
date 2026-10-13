@@ -400,6 +400,60 @@ PLAN
         echo "    again:  $sib_beta_again"
     fi
 
+    # --- A numbered workspace survives a deleted lower-numbered sibling ---
+    git init -q -b main "$TEST_ROOT/holes"
+    local holes names name holes_dirs=() holes_again holes_ledger
+    holes="$(physical_path "$(cd "$TEST_ROOT/holes" && git rev-parse --show-toplevel)")"
+    names=(one two three four)
+    for name in "${names[@]}"; do
+        mkdir -p "$holes/docs/$name/common"
+        printf '# P\n\n## Task 1: P\n\nP.\n' > "$holes/docs/$name/common/plan.md"
+        holes_dirs+=("$(cd "$holes" && "$SDD_SCRIPTS/sdd-workspace" "docs/$name/common/plan.md")")
+    done
+    printf 'Task 1: complete\n' > "${holes_dirs[3]}/progress.md"
+    rm -rf "${holes_dirs[2]}"
+    holes_again="$(cd "$holes" && "$SDD_SCRIPTS/sdd-workspace" docs/four/common/plan.md)"
+    holes_ledger="$(cat "$holes_again/progress.md" 2>/dev/null || true)"
+    if [[ "$holes_again" == "${holes_dirs[3]}" && "$holes_ledger" == "Task 1: complete" ]]; then
+        pass "fourth plan keeps its numbered workspace and ledger after a lower one is deleted"
+    else
+        fail "fourth plan keeps its numbered workspace and ledger after a lower one is deleted"
+        echo "    first: ${holes_dirs[3]}"
+        echo "    again: $holes_again"
+    fi
+
+    # --- An unreadable marker terminates at every candidate form ---
+    git init -q -b main "$TEST_ROOT/unreadable"
+    local unreadable form unreadable_rc unreadable_out unreadable_sdd
+    unreadable="$(physical_path "$(cd "$TEST_ROOT/unreadable" && git rev-parse --show-toplevel)")"
+    unreadable_sdd="$unreadable/.superpowers/sdd"
+    mkdir -p "$unreadable/docs/x/common"
+    printf '# P\n\n## Task 1: P\n\nP.\n' > "$unreadable/docs/x/common/plan.md"
+    for form in unsuffixed parent-suffixed numbered; do
+        rm -rf "$unreadable_sdd"
+        mkdir -p "$unreadable_sdd"
+        case "$form" in
+            unsuffixed)
+                mkdir -p "$unreadable_sdd/plan/plan-path" ;;
+            parent-suffixed)
+                mkdir -p "$unreadable_sdd/plan" "$unreadable_sdd/plan-common/plan-path"
+                printf 'elsewhere/plan.md\n' > "$unreadable_sdd/plan/plan-path" ;;
+            numbered)
+                mkdir -p "$unreadable_sdd/plan" "$unreadable_sdd/plan-common" "$unreadable_sdd/plan-common-2/plan-path"
+                printf 'elsewhere/plan.md\n' > "$unreadable_sdd/plan/plan-path"
+                printf 'elsewhere-two/plan.md\n' > "$unreadable_sdd/plan-common/plan-path" ;;
+        esac
+        unreadable_rc=0
+        unreadable_out="$(cd "$unreadable" && "$SDD_SCRIPTS/sdd-workspace" docs/x/common/plan.md 2>/dev/null)" || unreadable_rc=$?
+        if [[ "$unreadable_rc" -eq 1 && -z "$unreadable_out" ]]; then
+            pass "unreadable $form marker exits 1 without choosing another workspace"
+        else
+            fail "unreadable $form marker exits 1 without choosing another workspace"
+            echo "    exit: $unreadable_rc"
+            echo "    output: $unreadable_out"
+        fi
+    done
+
     # --- Filesystem failure terminates instead of cycling candidates ---
     git init -q -b main "$TEST_ROOT/blocked"
     local blocked
