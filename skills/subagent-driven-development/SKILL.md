@@ -24,11 +24,12 @@ judgment settles what neither answers. Record every decision in the ledger as
 going. A wrong ruling costs rework your human partner can see and undo; a
 session parked on a question costs their whole day and buys nothing.
 
-Four things stop you, and only these: an irreversible or destructive
+Five things stop you, and only these: an irreversible or destructive
 operation; a security-sensitive action; a side effect outside this worktree
 that norms say you ask about first (a merge, a push to a shared branch, a
-publish); and a plan so broken that every path forward is a guess. For those,
-stop and ask.
+publish); a plan so broken that every path forward is a guess; and a ruling
+that would invalidate the remaining tasks or change the plan's approach, even
+when you can see a way forward. For those, stop and ask.
 
 ## When to Use
 
@@ -78,7 +79,7 @@ digraph process {
         "R = 5?" [shape=diamond];
         "Adjudicate each open finding" [shape=box];
         "Any load-bearing finding?" [shape=diamond];
-        "Rule and continue; stop only if every path forward is a guess" [shape=box];
+        "Rule and continue; stop if every path forward is a guess or the ruling invalidates the rest of the plan" [shape=box];
         "Park findings in ledger with rulings" [shape=box];
         "Append completion to ledger, mark todo complete" [shape=box];
     }
@@ -109,7 +110,7 @@ digraph process {
     "R = 5?" -> "Fix round R of 5: R≤3 resume implementer; R≥4 fresh implementer, more capable model" [label="no - next round"];
     "R = 5?" -> "Adjudicate each open finding" [label="yes - breaker trips"];
     "Adjudicate each open finding" -> "Any load-bearing finding?";
-    "Any load-bearing finding?" -> "Rule and continue; stop only if every path forward is a guess" [label="yes"];
+    "Any load-bearing finding?" -> "Rule and continue; stop if every path forward is a guess or the ruling invalidates the rest of the plan" [label="yes"];
     "Any load-bearing finding?" -> "Park findings in ledger with rulings" [label="no"];
     "Park findings in ledger with rulings" -> "Append completion to ledger, mark todo complete";
     "Append completion to ledger, mark todo complete" -> "More tasks remain?";
@@ -425,7 +426,8 @@ the cross-task context the reviewer lacks:
   ledger it as `Task <N>: Ruling: <finding> — <what you decided and why>`,
   and carry it into the next task's dispatch. Parking a structural failure
   silently lets every dependent task build on it. Stop only when the defect
-  leaves every path forward a guess.
+  leaves every path forward a guess, or when the ruling would invalidate
+  the remaining tasks or change the plan's approach.
 
 Adjudicate only at the cap. Adjudicating earlier to end a loop is
 pre-judging with a different name. Every adjudication is a ledger entry —

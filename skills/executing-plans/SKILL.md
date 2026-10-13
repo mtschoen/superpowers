@@ -36,11 +36,12 @@ as `Ruling: <what you decided> — <why> — <what it costs if wrong>`, and keep
 going. Deviating from the plan without a ledgered ruling is a decision made
 in secret.
 
-Four things stop you, and only these: an irreversible or destructive
+Five things stop you, and only these: an irreversible or destructive
 operation; a security-sensitive action; a side effect outside this worktree
 that norms say you ask about first (a merge, a push to a shared branch, a
-publish); and a plan so broken that every path forward is a guess. For
-those, stop and ask.
+publish); a plan so broken that every path forward is a guess; and a ruling
+that would invalidate the remaining tasks or change the plan's approach,
+even when you can see a way forward. For those, stop and ask.
 
 ## When to Use
 
@@ -189,7 +190,7 @@ not a formality — a test that passes before the implementation exists is
 a finding about the test.
 
 Every step that runs a command has an `Expected:` line. Run the command,
-read its output, and compare. Three outcomes:
+read its output, and compare. Four outcomes:
 
 - **Matches.** Next step.
 - **The code is wrong.** Use superpowers:systematic-debugging. Find the
@@ -200,6 +201,13 @@ read its output, and compare. Three outcomes:
   it as `Task <N>: Ruling: <finding> — <what you decided and why>`, and
   continue. The ruling is carried, not remembered: later tasks that touch
   the same interface read it from the ledger.
+- **Bugged behavior as planned.** You followed the plan exactly and the
+  result is buggy. The plan has a defect. Fix the bug, which means
+  deviating from the plan, and ledger the ruling in the form "the plan
+  said X but X produces Y; I did Z instead" so your human partner sees
+  it. Don't carry buggy code forward, and don't ratify the bug by
+  updating the plan to match. If the fix changes the plan's approach or
+  invalidates later tasks, that is a stop, not a ruling.
 
 Commit as the plan's commit steps say. A task that spans several commits
 is fine; BASE is what the review range is cut from, never `HEAD~1`.
