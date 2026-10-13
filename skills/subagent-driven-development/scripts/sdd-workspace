@@ -58,26 +58,55 @@ case "$plan_abs" in
   *)         plan_id=$plan_abs ;;
 esac
 
+# Exit the whole helper on a filesystem failure. Callers use owns() under
+# if/while, where errexit is suppressed, so I/O errors must exit explicitly
+# instead of looking like "another plan owns this workspace".
+io_fail() { echo "sdd-workspace: $1" >&2; exit 1; }
+
+# Print the workspace's recorded plan id; nonzero exit only for a read error.
+marker_of() { cat -- "$1/plan-path" 2>/dev/null || io_fail "cannot read $1/plan-path"; }
+
 # True when the workspace at $1 is (or becomes) this plan's: an existing
 # marker must name this plan; a missing marker means a new workspace or a
 # pre-marker legacy one, and either way the plan claims it by writing one.
+# Returns 1 only for a successfully read marker naming a different plan.
 owns() {
   if [ -e "$1/plan-path" ]; then
-    [ "$(cat "$1/plan-path")" = "$plan_id" ]
+    [ "$(marker_of "$1")" = "$plan_id" ]
   else
-    mkdir -p "$1"
-    printf '%s\n' "$plan_id" > "$1/plan-path"
+    mkdir -p -- "$1" || io_fail "cannot create $1"
+    printf '%s\n' "$plan_id" > "$1/plan-path" || io_fail "cannot write $1/plan-path"
   fi
 }
 
-dir="$base/$slug"
-if ! owns "$dir"; then
-  parent=$(basename "$plan_dir")
-  dir="$base/$slug-$parent"
+# True when the workspace at $1 already carries this plan's marker. Looked up
+# before claiming so a plan keeps its workspace after a sibling's is deleted.
+marked_for_plan() {
+  [ -e "$1/plan-path" ] && [ "$(marker_of "$1")" = "$plan_id" ]
+}
+
+parent=$(basename "$plan_dir")
+dir=""
+for candidate in "$base/$slug" "$base/$slug-$parent"; do
+  if marked_for_plan "$candidate"; then dir=$candidate; break; fi
+done
+if [ -z "$dir" ]; then
+  n=2
+  while [ -e "$base/$slug-$parent-$n" ]; do
+    if marked_for_plan "$base/$slug-$parent-$n"; then dir="$base/$slug-$parent-$n"; break; fi
+    n=$((n + 1))
+  done
+fi
+
+if [ -z "$dir" ]; then
+  dir="$base/$slug"
   if ! owns "$dir"; then
-    n=2
-    while ! owns "$base/$slug-$parent-$n"; do n=$((n + 1)); done
-    dir="$base/$slug-$parent-$n"
+    dir="$base/$slug-$parent"
+    if ! owns "$dir"; then
+      n=2
+      while ! owns "$base/$slug-$parent-$n"; do n=$((n + 1)); done
+      dir="$base/$slug-$parent-$n"
+    fi
   fi
 fi
 

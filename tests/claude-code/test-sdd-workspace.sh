@@ -380,6 +380,42 @@ PLAN
         echo "    now: $(cat "$own/.superpowers/sdd/.gitignore")"
     fi
 
+    # --- A surviving plan keeps its workspace after a sibling's is deleted ---
+    git init -q -b main "$TEST_ROOT/sibling"
+    local sib
+    sib="$(physical_path "$(cd "$TEST_ROOT/sibling" && git rev-parse --show-toplevel)")"
+    mkdir -p "$sib/docs/alpha" "$sib/docs/beta"
+    printf '# A\n\n## Task 1: A\n\nA.\n' > "$sib/docs/alpha/plan.md"
+    printf '# B\n\n## Task 1: B\n\nB.\n' > "$sib/docs/beta/plan.md"
+    local sib_alpha sib_beta sib_beta_again
+    sib_alpha="$(cd "$sib" && "$SDD_SCRIPTS/sdd-workspace" docs/alpha/plan.md)"
+    sib_beta="$(cd "$sib" && "$SDD_SCRIPTS/sdd-workspace" docs/beta/plan.md)"
+    rm -rf "$sib_alpha"
+    sib_beta_again="$(cd "$sib" && "$SDD_SCRIPTS/sdd-workspace" docs/beta/plan.md)"
+    if [[ "$sib_beta" == "$sib/.superpowers/sdd/plan-beta" && "$sib_beta_again" == "$sib_beta" ]]; then
+        pass "beta keeps plan-beta after alpha's workspace is deleted"
+    else
+        fail "beta keeps plan-beta after alpha's workspace is deleted"
+        echo "    first:  $sib_beta"
+        echo "    again:  $sib_beta_again"
+    fi
+
+    # --- Filesystem failure terminates instead of cycling candidates ---
+    git init -q -b main "$TEST_ROOT/blocked"
+    local blocked
+    blocked="$(physical_path "$(cd "$TEST_ROOT/blocked" && git rev-parse --show-toplevel)")"
+    mkdir -p "$blocked/.superpowers"
+    printf 'not a directory\n' > "$blocked/.superpowers/sdd"
+    printf '# P\n\n## Task 1: P\n\nP.\n' > "$blocked/plan.md"
+    local blocked_rc=0
+    (cd "$blocked" && timeout 10 "$SDD_SCRIPTS/sdd-workspace" plan.md >/dev/null 2>&1) || blocked_rc=$?
+    if [[ "$blocked_rc" -eq 1 ]]; then
+        pass "unwritable workspace root exits 1 instead of looping"
+    else
+        fail "unwritable workspace root exits 1 instead of looping"
+        echo "    exit: $blocked_rc (124 means it had to be killed)"
+    fi
+
     echo ""
     if [[ "$FAILURES" -ne 0 ]]; then
         echo "FAILED: $FAILURES assertion(s)."
