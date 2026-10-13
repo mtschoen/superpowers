@@ -1,3 +1,7 @@
+<!-- Before publication, the whole title and body (every field below, not
+only the first prompt) goes through prompts/scrub.md and a CLEAN
+prompts/scrub-audit.md. Delete this comment from the published text. -->
+
 Title: <skill or symptom>: <one-line observable> (<harness>)
 
 - [x] I searched existing issues and this is not a duplicate (searched: <query terms>; closest: <#n title, or "none">)

@@ -23,8 +23,12 @@ Without curl, hand over `https://github.com/obra/superpowers/issues?q=<terms>`.
 
 ## File
 
-Write the filled `templates/issue.md` to the workspace and show the exact
-text. After approval:
+Write the filled `templates/issue.md`, or the comment for an existing
+issue, to a directory of its own in the workspace. Dispatch
+`prompts/scrub.md`, then `prompts/scrub-audit.md` on that directory,
+repeating both until the audit returns CLEAN. The complete title, body and
+citations are in scope, not only the first prompt, and nothing from
+`scrub-log.md` is published. Show the exact scrubbed text. After approval:
 
 ```bash
 gh issue create --repo obra/superpowers --title "<title>" --body-file <path> \
