@@ -51,9 +51,14 @@ if not all(isinstance(p, str) and p.strip() for p in prompts):
 
 claude_manifest = json.loads(
     (root / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-if manifest["version"] != claude_manifest["version"]:
+# SemVer build metadata (the part after '+') is a fork build marker on the
+# Claude manifests (for example 7.0.0+probe1); compare the release part only.
+def release_version(version):
+    return version.split("+", 1)[0]
+
+if release_version(manifest["version"]) != release_version(claude_manifest["version"]):
     fail(f"version {manifest['version']!r} != .claude-plugin version "
-         f"{claude_manifest['version']!r}")
+         f"{claude_manifest['version']!r} (build metadata after '+' is ignored)")
 if manifest["author"] != claude_manifest["author"]:
     fail("author does not match .claude-plugin/plugin.json")
 
