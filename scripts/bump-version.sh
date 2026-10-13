@@ -190,7 +190,10 @@ cmd_audit() {
 
   # Grep for the version string, but not inside a longer number such as an
   # IP address; a "v" prefix or surrounding quotes still match.
-  local version_pattern="(^|[^0-9.])${current_version//./\\.}([^0-9]|$)"
+  # Escape every ERE metacharacter: build metadata such as 1.2.3+probe1 holds a "+".
+  local escaped_version
+  escaped_version=$(printf '%s' "$current_version" | sed 's/[][\.*^$+?(){}|]/\\&/g')
+  local version_pattern="(^|[^0-9.])${escaped_version}([^0-9]|$)"
   local found_undeclared=0
   while IFS= read -r match; do
     local match_file
