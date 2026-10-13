@@ -30,6 +30,7 @@ cp -r "$REPO_ROOT/skills" "$SUPERPOWERS_DIR/"
 # Install plugin
 mkdir -p "$(dirname "$SUPERPOWERS_PLUGIN_FILE")"
 cp "$REPO_ROOT/.opencode/plugins/superpowers.js" "$SUPERPOWERS_PLUGIN_FILE"
+cp "$REPO_ROOT/.opencode/tool-mappings.js" "$SUPERPOWERS_DIR/.opencode/tool-mappings.js"
 
 # Register plugin where OpenCode reads it. Prefer a symlink; fall back to a
 # copy on platforms/filesystems without symlink support (e.g. Git Bash on

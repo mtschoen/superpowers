@@ -34,7 +34,8 @@ const transform = plugin['experimental.chat.messages.transform'];
 
 // Mapping constants are flavor-specific (#opencode-v2): V1 keeps the 1.18.x
 // tool names, V2 teaches the renamed tools. Assert both directly.
-const mappingFailures = assertMappingConstants(mod);
+const mappingModule = await import(new URL('../tool-mappings.js', pathToFileURL(pluginPath)).href);
+const mappingFailures = [...assertMappingConstants(mappingModule), ...assertFunctionOnlyNamedExports(mod)];
 
 const firstOutput = makeOutput(`${scenario} bootstrap first step`);
 await transform({}, firstOutput);
@@ -164,6 +165,15 @@ function assertMissingBootstrap(result) {
     failures.push(`expected missing-file result to be cached, got ${result.secondExistsCount - result.firstExistsCount} extra exists checks`);
   }
   return failures;
+}
+
+// An older V1 loader invokes every named export of the plugin module, so each
+// one must be callable (the default object is covered by the documented V1
+// minimum version instead).
+function assertFunctionOnlyNamedExports(mod) {
+  return Object.entries(mod)
+    .filter(([name, value]) => name !== 'default' && typeof value !== 'function')
+    .map(([name]) => `expected named export ${name} of the plugin to be a function`);
 }
 
 function assertMappingConstants(mod) {

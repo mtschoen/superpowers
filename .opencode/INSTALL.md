@@ -10,6 +10,8 @@ OpenCode V2 requires version 2.0.4 or later.
 
 ### OpenCode V1
 
+V1 requires OpenCode 1.18.31 or later, the version this plugin is tested against. A V1 loader that invokes every export of the plugin module fails on the default object, so on an older host pin `v6.3.0`, whose only export is the plugin function (`SuperpowersPlugin`).
+
 Use the existing V1 plugin configuration:
 
 ```json
