@@ -154,6 +154,29 @@ PLAN
         echo "    ledger:"; sed 's/^/      /' "$ledger" 2>/dev/null || echo "      (missing)"
     fi
 
+    # --- helpers survive a mode-stripping extractor dropping exec bits ---
+    local stripped="$TEST_ROOT/stripped/skills"
+    mkdir -p "$stripped/executing-plans" "$stripped/subagent-driven-development"
+    cp -R "$EP_SCRIPTS" "$stripped/executing-plans/scripts"
+    cp -R "$EP_SCRIPTS/../../subagent-driven-development/scripts" "$stripped/subagent-driven-development/scripts"
+    chmod -x "$stripped"/*/scripts/*
+    local noexec_out noexec_rc=0
+    noexec_out="$(cd "$repo" && bash "$stripped/executing-plans/scripts/task-start" plan.md 1 2>&1)" || noexec_rc=$?
+    if [[ "$noexec_rc" -eq 0 && "$noexec_out" == *"brief: "* ]]; then
+        pass "task-start works with no exec bit on task-brief"
+    else
+        fail "task-start works with no exec bit on task-brief (rc=$noexec_rc)"
+        echo "    got: $noexec_out"
+    fi
+    noexec_rc=0
+    noexec_out="$(cd "$repo" && bash "$stripped/executing-plans/scripts/task-done" plan.md 1 "$base" -- true 2>&1)" || noexec_rc=$?
+    if [[ "$noexec_rc" -eq 0 && "$noexec_out" == *"ledger: Task 1: complete"* ]]; then
+        pass "task-done works with no exec bit on sdd-workspace"
+    else
+        fail "task-done works with no exec bit on sdd-workspace (rc=$noexec_rc)"
+        echo "    got: $noexec_out"
+    fi
+
     echo
     if [[ "$FAILURES" -eq 0 ]]; then
         echo "PASS"
