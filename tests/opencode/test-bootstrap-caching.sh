@@ -28,5 +28,21 @@ echo "Test 2: Caches missing SKILL.md result..."
 run_missing_file_check
 echo "  [PASS] Missing bootstrap file is cached and not re-probed every transform"
 
+echo "Test 3: Registered plugin path loads when symlinks are unavailable..."
+(
+    ln() { return 1; }
+    source "$SCRIPT_DIR/setup.sh"
+    trap cleanup_test_env EXIT
+    node --input-type=module -e '
+        const mod = await import(new URL(process.argv[1], "file://").href);
+        const bad = Object.entries(mod).filter(([name, value]) => name !== "default" && typeof value !== "function");
+        if (typeof mod.SuperpowersPlugin !== "function" || typeof mod.default?.setup !== "function" || bad.length) {
+            console.error("registered plugin exports are wrong", bad.map(([name]) => name));
+            process.exit(1);
+        }
+    ' "$OPENCODE_CONFIG_DIR/plugins/superpowers.js"
+)
+echo "  [PASS] Fallback registration imports the canonical plugin with function-only named exports"
+
 echo ""
 echo "=== All bootstrap caching tests passed ==="

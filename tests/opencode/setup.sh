@@ -33,13 +33,17 @@ cp "$REPO_ROOT/.opencode/plugins/superpowers.js" "$SUPERPOWERS_PLUGIN_FILE"
 cp "$REPO_ROOT/.opencode/tool-mappings.js" "$SUPERPOWERS_DIR/.opencode/tool-mappings.js"
 
 # Register plugin where OpenCode reads it. Prefer a symlink; fall back to a
-# copy on platforms/filesystems without symlink support (e.g. Git Bash on
-# Windows without Developer Mode, where `ln -s` does not create a real symlink).
+# forwarding module on platforms/filesystems without symlink support (e.g. Git
+# Bash on Windows without Developer Mode, where `ln -s` does not create a real
+# symlink). A copy would break the plugin's relative imports, so the fallback
+# re-exports the canonical plugin by absolute file URL.
 mkdir -p "$OPENCODE_CONFIG_DIR/plugins"
 plugin_registration="$OPENCODE_CONFIG_DIR/plugins/superpowers.js"
 if ! ln -sf "$SUPERPOWERS_PLUGIN_FILE" "$plugin_registration" 2>/dev/null \
     || [ ! -e "$plugin_registration" ]; then
-    cp "$SUPERPOWERS_PLUGIN_FILE" "$plugin_registration"
+    rm -f "$plugin_registration"
+    plugin_url=$(node -e 'console.log(require("url").pathToFileURL(process.argv[1]).href)' "$SUPERPOWERS_PLUGIN_FILE")
+    printf 'export * from "%s";\nexport { default } from "%s";\n' "$plugin_url" "$plugin_url" > "$plugin_registration"
 fi
 
 # Create test skills in different locations for testing
